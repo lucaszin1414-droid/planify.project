@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="PlaniFy: organize sua rotina semanal e acompanhe suas finanças em um só lugar.">
     <title>PlaniFy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,8 +33,8 @@
         <section id="topo" class="hero">
             <header class="topo">
                 <div class="botoes-topo">
-                    <button type="button" id="btn-login-header" data-acao="login">Login</button>
-                    <button type="button" id="btn-cadastro-header" data-acao="cadastro">Cadastro</button>
+                    <button type="button" id="btn-login-header">Login</button>
+                    <button type="button" id="btn-cadastro-header">Cadastro</button>
                 </div>
             </header>
 
@@ -186,9 +185,42 @@
                     </article>
                 </div>
             </div>
-        </section> 
+        </section>
 
-            <!-- 2. TELA PRINCIPAL (Logado) -->
+        <!-- RODAPÉ / CONTATO -->
+        <footer id="contato" class="rodape-site">
+            <div class="rodape-grade">
+                <div>
+                    <h3 class="rodape-marca">PlaniFy</h3>
+                    <p>Organize a sua rotina e entenda as suas finanças em um só lugar.</p>
+                </div>
+
+                <div>
+                    <h4>Navegação</h4>
+                    <ul class="lista-links">
+                        <li><a href="#topo">Início</a></li>
+                        <li><a href="#sobre">O Projeto</a></li>
+                        <li><a href="#quem-somos">Quem Somos</a></li>
+                        <li><a href="#funcionalidades">Funcionalidades</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4>Contato</h4>
+                    <ul class="lista-contato">
+                        <li><span class="icone-contato">✉️</span><a href="mailto:projetoplanify@gmail.com" class="campo-pendente">projetoplanify@gmail.com</a></li>
+                        <li><span class="icone-contato">📞</span><a href="tel:5500000000000" class="campo-pendente">[(00) 00000-0000]</a></li>
+                        <li><span class="icone-contato">📸</span><a href="https://instagram.com/planify" target="_blank" rel="noopener" class="campo-pendente">[@planify]</a></li>
+                    </ul>
+                </div>
+            </div>
+            <p class="rodape-copy">&copy; 2026 PlaniFy. Todos os direitos reservados.</p>
+        </footer>
+
+        <button type="button" id="btn-voltar-topo" class="btn-voltar-topo" aria-label="Voltar ao topo">&#8593;</button>
+    </div>
+
+    <!-- 2. TELA PRINCIPAL (Logado) -->
     <div id="tela-logado" class="tela">
         <header class="topo-logado">
             <!-- Abas de Navegação -->
@@ -205,7 +237,7 @@
                 <!-- Sininho de Notificações -->
                 <div class="notificacao-container">
                     <button id="btn-sininho" class="btn-sininho" type="button" title="Notificações">
-                                🔔
+                        🔔
                         <span id="badge-notificacao" class="badge-notificacao oculta">0</span>
                     </button>
                     <div id="dropdown-notificacoes" class="dropdown-conteudo dropdown-notif">
@@ -386,7 +418,7 @@
                 </div>
             </section>
 
-                        <!-- ABA 4: LEMBRETES DE PAGAMENTO -->
+            <!-- ABA 4: LEMBRETES DE PAGAMENTO -->
             <section id="aba-lembretes" class="conteudo-aba">
                 <h2>Agenda de Lembretes e Pagamentos</h2>
                 <div class="lembretes-container">
@@ -430,7 +462,7 @@
             <!-- ABA 5: PAINEL ADMINISTRATIVO (Funcional e Protegido) -->
             <section id="aba-admin" class="conteudo-aba">
                 <h2>Painel Administrativo do PlaniFy</h2>
-
+                
                 <div class="resumo-semanal-card" style="margin-bottom: 25px;">
                     <h3>Métricas Globais do Sistema</h3>
                     <div class="metricas-resumo">
@@ -485,27 +517,27 @@
     </div>
 
     <!-- MODAL DE CADASTRO -->
-    <div id="modal-cadastro" class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-cadastro">
+    <div id="modal-cadastro" class="modal">
         <div class="modal-conteudo">
-            <button type="button" class="fechar" id="fechar-cadastro" aria-label="Fechar cadastro">&times;</button>
-            <h2 id="titulo-modal-cadastro">Cadastro</h2>
+            <span class="fechar" id="fechar-cadastro">&times;</span>
+            <h2>Cadastro</h2>
             <form id="form-cadastro">
-                <input type="text" id="cad-usuario" name="usuario" autocomplete="username" aria-label="Nome de usuário" placeholder="Nome de Usuário" required>
-                <input type="email" id="cad-email" name="email" autocomplete="email" aria-label="E-mail" placeholder="E-mail" required>
-                <input type="password" id="cad-senha" name="senha" autocomplete="new-password" aria-label="Senha" placeholder="Senha" required>
+                <input type="text" id="cad-usuario" placeholder="Nome de Usuário" required>
+                <input type="email" id="cad-email" placeholder="E-mail" required>
+                <input type="password" id="cad-senha" placeholder="Senha" required>
                 <button type="submit">Cadastrar</button>
             </form>
         </div>
     </div>
 
     <!-- MODAL DE LOGIN -->
-    <div id="modal-login" class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-login">
+    <div id="modal-login" class="modal">
         <div class="modal-conteudo">
-            <button type="button" class="fechar" id="fechar-login" aria-label="Fechar login">&times;</button>
-            <h2 id="titulo-modal-login">Login</h2>
+            <span class="fechar" id="fechar-login">&times;</span>
+            <h2>Login</h2>
             <form id="form-login">
-                <input type="email" id="login-email" name="email" autocomplete="email" aria-label="E-mail" placeholder="E-mail" required>
-                <input type="password" id="login-senha" name="senha" autocomplete="current-password" aria-label="Senha" placeholder="Senha" required>
+                <input type="email" id="login-email" placeholder="E-mail" required>
+                <input type="password" id="login-senha" placeholder="Senha" required>
                 <button type="submit">Entrar</button>
             </form>
         </div>
