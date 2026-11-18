@@ -459,11 +459,12 @@
                 </div>
             </section>
 
-            <!-- ABA 5: PAINEL ADMINISTRATIVO (Protegido) -->
+            <!-- ABA 5: PAINEL ADMINISTRATIVO (Funcional e Protegido) -->
             <section id="aba-admin" class="conteudo-aba">
                 <h2>Painel Administrativo do PlaniFy</h2>
-                <div class="resumo-semanal-card">
-                    <h3>Métricas Globais do Sistema (Privacidade Protegida)</h3>
+                
+                <div class="resumo-semanal-card" style="margin-bottom: 25px;">
+                    <h3>Métricas Globais do Sistema</h3>
                     <div class="metricas-resumo">
                         <div class="card-metrica">
                             <span>Usuários Cadastrados</span>
@@ -474,13 +475,42 @@
                             <h3 id="admin-usuarios-logados">0</h3>
                         </div>
                         <div class="card-metrica">
-                            <span>Registros Totais Hoje</span>
+                            <span>Registros Globais Feitos</span>
                             <h3 id="admin-registros-hoje">0</h3>
                         </div>
                     </div>
-                    <p style="text-align: center; color: #a3c1ad; font-size: 13px; margin-top: 15px;">
-                        🔒 Modo de segurança ativo: Nenhuma atividade ou dado financeiro individual é exposto. Apenas contadores agregados.
-                    </p>
+                </div>
+
+                <!-- FERRAMENTA 1: MURAL DE AVISOS GLOBAIS (BROADCAST) -->
+                <div class="resumo-semanal-card" style="margin-bottom: 25px;">
+                    <h3>📢 Enviar Aviso Global para Todos os Usuários</h3>
+                    <form id="form-admin-aviso" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                        <input type="text" id="admin-aviso-titulo" placeholder="Título do Comunicado (Ex: Manutenção no sistema)" required style="padding: 10px; background: rgba(255,255,255,0.08); border: 1px solid #2a4d34; border-radius: 4px; color: #fff;">
+                        <textarea id="admin-aviso-texto" placeholder="Mensagem detalhada que aparecerá no sininho de todos..." required style="padding: 10px; background: rgba(255,255,255,0.08); border: 1px solid #2a4d34; border-radius: 4px; color: #fff; height: 80px; resize: none;"></textarea>
+                        <button type="submit" style="padding: 10px; background: #2ecc71; color: #122418; border: none; font-weight: bold; border-radius: 4px; cursor: pointer;">Disparar Notificação Global</button>
+                    </form>
+                </div>
+
+                <!-- FERRAMENTA 2: GERENCIAMENTO DE USUÁRIOS CADASTRADOS -->
+                <div class="resumo-semanal-card" style="margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">👥 Gerenciamento de Usuários</h3>
+                        <button type="button" id="btn-admin-backup" style="padding: 6px 12px; background: #ffffff; color: #1b3323; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px;">📥 Baixar Backup Geral (JSON)</button>
+                    </div>
+                    <div class="tabela-container" style="max-height: 250px;">
+                        <table class="tabela-agenda" style="font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    <th>Nome de Usuário</th>
+                                    <th>E-mail (Chave)</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-corpo-tabela-usuarios">
+                                <!-- Preenchido via Script -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
         </main>
