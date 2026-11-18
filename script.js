@@ -26,6 +26,7 @@ const btnConfiguracoes = document.getElementById('btn-configuracoes');
 const btnDesconectar = document.getElementById('btn-desconectar');
 const btnPainelAdmin = document.getElementById('btn-painel-admin');
 const btnSuporte = document.getElementById('btn-suporte');
+const abaBtnAdmin = document.getElementById('aba-btn-admin');
 
 // Código de acesso do Administrador
 const CODIGO_ADMIN_PADRAO = "PLANIFY-ADMIN-2026-SECURE";
@@ -115,13 +116,13 @@ function marcarNotificacoesComoLidas() {
 const boasVindasTitulo = document.getElementById('boas-vindas-titulo');
 
 // --- ESTADO GLOBAL DA APLICAÇÃO ---
-let tipoTransacaoAtual = 'entrada'; // 'entrada' ou 'saida'
+let tipoTransacaoAtual = 'entrada';
 const diasDaSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 const diasAbreviados = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const nomesDosMeses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
-const HORA_INICIAL = 7;   // grade começa às 07:00
-const TOTAL_HORAS = 16;   // e vai até às 22:00
+const HORA_INICIAL = 7;
+const TOTAL_HORAS = 16;
 
 // --- DATAS E SEMANAS ---
 function adicionarDias(data, quantidade) {
@@ -315,6 +316,7 @@ function encerrarSessao() {
     localStorage.removeItem('planify_nome_ativo');
     usuarioLogadoEmail = '';
     usuarioLogadoNome = '';
+    if (abaBtnAdmin) abaBtnAdmin.style.display = 'none';
     telaLogado.classList.remove('ativa');
     telaInicial.classList.add('ativa');
 }
@@ -334,12 +336,15 @@ if (btnPainelAdmin) {
         const codigoDigitado = prompt("Digite o código de acesso administrativo:");
 
         if (codigoDigitado === CODIGO_ADMIN_PADRAO) {
+            if (abaBtnAdmin) abaBtnAdmin.style.display = 'inline-block';
+
             document.querySelectorAll('.btn-aba').forEach(b => b.classList.remove('ativa'));
             document.querySelectorAll('.conteudo-aba').forEach(c => c.classList.remove('ativa'));
 
             const abaAdmin = document.getElementById('aba-admin');
             if (abaAdmin) {
                 abaAdmin.classList.add('ativa');
+                if (abaBtnAdmin) abaBtnAdmin.classList.add('ativa');
                 atualizarMetricasAdmin();
             }
         } else if (codigoDigitado !== null) {
@@ -484,6 +489,8 @@ botoesAba.forEach(botao => {
             if (painelResumo && painelResumo.classList.contains('ativa')) atualizarResumoSemanal();
         } else if (abaId === 'aba-lembretes') {
             renderizarLembretes();
+        } else if (abaId === 'aba-admin') {
+            atualizarMetricasAdmin();
         }
     });
 });
