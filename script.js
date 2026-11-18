@@ -44,7 +44,7 @@ const btnLimparNotifs = document.getElementById('btn-limpar-notifs');
 
 let listaHistoricoNotifs = [];
 
-if (btnSininho) {
+if (btnSininho && dropdownNotificacoes) {
     btnSininho.addEventListener('click', (e) => {
         e.stopPropagation();
         if (dropdownMenu) dropdownMenu.classList.remove('mostrar');
@@ -238,14 +238,44 @@ function itemFinanceiro(chaveSemana, hIndex, diaIndex) {
 }
 
 // --- MODAIS DE CADASTRO E LOGIN ---
-if (btnCadastroHeader) btnCadastroHeader.addEventListener('click', () => modalCadastro.style.display = 'block');
-if (btnLoginHeader) btnLoginHeader.addEventListener('click', () => modalLogin.style.display = 'block');
-if (fecharCadastro) fecharCadastro.addEventListener('click', () => modalCadastro.style.display = 'none');
-if (fecharLogin) fecharLogin.addEventListener('click', () => modalLogin.style.display = 'none');
+function abrirModal(acao) {
+    if (acao === 'cadastro' && modalCadastro) {
+        modalCadastro.style.display = 'block';
+    } else if (acao === 'login' && modalLogin) {
+        modalLogin.style.display = 'block';
+    }
+}
+
+// Delegação: funciona tanto nos botões do menu quanto nos botões do cabeçalho.
+document.addEventListener('click', (event) => {
+    const botaoAcao = event.target.closest('[data-acao]');
+    if (!botaoAcao) return;
+
+    const acao = botaoAcao.dataset.acao;
+    if (acao === 'login' || acao === 'cadastro') {
+        event.preventDefault();
+        abrirModal(acao);
+    }
+});
+
+// Compatibilidade com botões antigos que não tenham data-acao.
+if (btnCadastroHeader && !btnCadastroHeader.hasAttribute('data-acao')) {
+    btnCadastroHeader.addEventListener('click', () => abrirModal('cadastro'));
+}
+if (btnLoginHeader && !btnLoginHeader.hasAttribute('data-acao')) {
+    btnLoginHeader.addEventListener('click', () => abrirModal('login'));
+}
+
+if (fecharCadastro && modalCadastro) {
+    fecharCadastro.addEventListener('click', () => modalCadastro.style.display = 'none');
+}
+if (fecharLogin && modalLogin) {
+    fecharLogin.addEventListener('click', () => modalLogin.style.display = 'none');
+}
 
 window.addEventListener('click', (event) => {
-    if (event.target === modalCadastro) modalCadastro.style.display = 'none';
-    if (event.target === modalLogin) modalLogin.style.display = 'none';
+    if (modalCadastro && event.target === modalCadastro) modalCadastro.style.display = 'none';
+    if (modalLogin && event.target === modalLogin) modalLogin.style.display = 'none';
 });
 
 // --- CADASTRO NO FIREBASE ---
@@ -324,17 +354,18 @@ if (formLogin) {
 }
 
 async function ativarSessaoLogada() {
-    boasVindasTitulo.innerText = `Bem-vindo(a), ${usuarioLogadoNome}!`;
-    telaInicial.classList.remove('ativa');
-    telaLogado.classList.add('ativa');
+    if (boasVindasTitulo) boasVindasTitulo.innerText = `Bem-vindo(a), ${usuarioLogadoNome}!`;
+    if (telaInicial) telaInicial.classList.remove('ativa');
+    if (telaLogado) telaLogado.classList.add('ativa');
     await carregarDadosDoUsuarioDaNuvem();
     await carregarAvisosGlobaisDaNuvem();
 }
 
 // --- MENU HAMBÚRGUER ---
-if (btnMenuHamburguer) {
+if (btnMenuHamburguer && dropdownMenu) {
     btnMenuHamburguer.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (dropdownNotificacoes) dropdownNotificacoes.classList.remove('mostrar');
         dropdownMenu.classList.toggle('mostrar');
     });
 }
@@ -347,22 +378,22 @@ window.addEventListener('click', () => {
 
 if (btnTrocarConta) {
     btnTrocarConta.addEventListener('click', () => {
-        dropdownMenu.classList.remove('mostrar');
+        if (dropdownMenu) dropdownMenu.classList.remove('mostrar');
         encerrarSessao();
-        modalLogin.style.display = 'block';
+        if (modalLogin) modalLogin.style.display = 'block';
     });
 }
 
 if (btnConfiguracoes) {
     btnConfiguracoes.addEventListener('click', () => {
-        dropdownMenu.classList.remove('mostrar');
+        if (dropdownMenu) dropdownMenu.classList.remove('mostrar');
         alert('Área de configurações em desenvolvimento.');
     });
 }
 
 if (btnDesconectar) {
     btnDesconectar.addEventListener('click', () => {
-        dropdownMenu.classList.remove('mostrar');
+        if (dropdownMenu) dropdownMenu.classList.remove('mostrar');
         encerrarSessao();
     });
 }
@@ -373,14 +404,14 @@ function encerrarSessao() {
     usuarioLogadoEmail = '';
     usuarioLogadoNome = '';
     if (abaBtnAdmin) abaBtnAdmin.style.display = 'none';
-    telaLogado.classList.remove('ativa');
-    telaInicial.classList.add('ativa');
+    if (telaLogado) telaLogado.classList.remove('ativa');
+    if (telaInicial) telaInicial.classList.add('ativa');
 }
 
 // SUPORTE
 if (btnSuporte) {
     btnSuporte.addEventListener('click', () => {
-        dropdownMenu.classList.remove('mostrar');
+        if (dropdownMenu) dropdownMenu.classList.remove('mostrar');
         window.location.href = "mailto:projetoplanify@gmail.com?subject=Suporte%20PlaniFy";
     });
 }
@@ -388,7 +419,7 @@ if (btnSuporte) {
 // PAINEL ADMIN PROTEGIDO (CONECTADO AO FIRESTORE)
 if (btnPainelAdmin) {
     btnPainelAdmin.addEventListener('click', () => {
-        dropdownMenu.classList.remove('mostrar');
+        if (dropdownMenu) dropdownMenu.classList.remove('mostrar');
         const codigoDigitado = prompt("Digite o código de acesso administrativo:")?.trim();
 
         if (CODIGOS_ADMIN_VALIDOS.includes(codigoDigitado)) {
@@ -465,7 +496,7 @@ async function atualizarMetricasAdmin() {
     } catch (erro) {
         console.error("Erro ao carregar métricas admin:", erro);
     }
-}
+}  
 
 window.adminExcluirConta = async function(emailUsuario) {
     if (!window.firebaseDB) return;
@@ -683,7 +714,7 @@ function gerarLinhaBalancoDiario() {
         if (mesmoDia(adicionarDias(semanaSelecionada, dia), hoje)) tdBalanco.classList.add('coluna-hoje');
         linhaBalanco.appendChild(tdBalanco);
     }
-}
+}  
 
 const btnsTipoTransacao = document.querySelectorAll('.btn-tipo-transacao');
 btnsTipoTransacao.forEach(btn => {
@@ -702,12 +733,13 @@ btnsVisao.forEach(btn => {
         const visao = btn.getAttribute('data-visao');
         const painelGrade = document.getElementById('visao-grade-financeira');
         const painelResumo = document.getElementById('visao-resumo-financeiro');
+
         if (visao === 'grade') {
-            painelGrade.classList.add('ativa');
-            painelResumo.classList.remove('ativa');
+            if (painelGrade) painelGrade.classList.add('ativa');
+            if (painelResumo) painelResumo.classList.remove('ativa');
         } else {
-            painelGrade.classList.remove('ativa');
-            painelResumo.classList.add('ativa');
+            if (painelGrade) painelGrade.classList.remove('ativa');
+            if (painelResumo) painelResumo.classList.add('ativa');
             atualizarResumoSemanal();
         }
     });
@@ -757,10 +789,16 @@ function calcularBalancos() {
         for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
             const item = dados[`${hIndex}-${dia}`];
             if (item && item.valor > 0) {
-                if (item.tipo === 'entrada') { balancoDia += item.valor; totalEntradasGeral += item.valor; }
-                else { balancoDia -= item.valor; totalSaidasGeral += item.valor; }
+                if (item.tipo === 'entrada') {
+                    balancoDia += item.valor;
+                    totalEntradasGeral += item.valor;
+                } else {
+                    balancoDia -= item.valor;
+                    totalSaidasGeral += item.valor;
+                }
             }
         }
+
         const tdBalanco = document.getElementById(`balanco-dia-${dia}`);
         if (tdBalanco) {
             tdBalanco.textContent = `R$ ${balancoDia.toFixed(2)}`;
@@ -773,6 +811,7 @@ function calcularBalancos() {
     const resBalanco = document.getElementById('resumo-balanco-geral');
     if (resEntradas) resEntradas.textContent = `R$ ${totalEntradasGeral.toFixed(2)}`;
     if (resSaidas) resSaidas.textContent = `R$ ${totalSaidasGeral.toFixed(2)}`;
+
     const balancoGeral = totalEntradasGeral - totalSaidasGeral;
     if (resBalanco) {
         resBalanco.textContent = `R$ ${balancoGeral.toFixed(2)}`;
@@ -808,7 +847,10 @@ function atualizarResumoSemanal() {
             }
         }
     }
-    if (!encontrouTransacao) listaDetalhes.innerHTML = '<p style="text-align: center; color: #aaaaaa; padding: 10px;">Nenhuma movimentação lançada nesta semana.</p>';
+
+    if (!encontrouTransacao) {
+        listaDetalhes.innerHTML = '<p style="text-align: center; color: #aaaaaa; padding: 10px;">Nenhuma movimentação lançada nesta semana.</p>';
+    }
 }
 
 function irParaSemana(dataQualquer) {
@@ -880,6 +922,7 @@ function atualizarCalendario() {
             if (data.getMonth() !== mes) celula.classList.add('fora-do-mes');
             if (mesmoDia(data, hoje)) celula.classList.add('hoje');
             if (camposPreenchidos.some(campo => campo.endsWith(`-${d}`))) celula.classList.add('tem-atividade');
+
             const numero = document.createElement('span');
             numero.textContent = data.getDate();
             celula.appendChild(numero);
@@ -898,14 +941,17 @@ function renderizarSemana() {
     gerarTabelaFinanceira();
     atualizarNavegadoresSemana();
     atualizarCalendario();
+
     const painelResumo = document.getElementById('visao-resumo-financeiro');
     if (painelResumo && painelResumo.classList.contains('ativa')) atualizarResumoSemanal();
+
     atualizarNotaAoVivo();
 }
 
 document.addEventListener('click', (e) => {
     const botao = e.target.closest('[data-nav]');
     if (!botao) return;
+
     const acao = botao.dataset.nav;
     if (acao === 'anterior') irParaSemana(adicionarDias(semanaSelecionada, -7));
     else if (acao === 'proxima') irParaSemana(adicionarDias(semanaSelecionada, 7));
@@ -915,17 +961,36 @@ document.addEventListener('click', (e) => {
 function definirModoAgenda(modo) {
     modoAgenda = modo;
     document.querySelectorAll('.btn-modo-agenda').forEach(b => b.classList.toggle('ativa', b.dataset.modo === modo));
+
     const painel = document.getElementById('painel-calendario');
     if (painel) painel.classList.toggle('oculto', modo !== 'mensal');
-    if (modo === 'mensal') { mesExibido = mesDaSemana(semanaSelecionada); atualizarCalendario(); }
+
+    if (modo === 'mensal') {
+        mesExibido = mesDaSemana(semanaSelecionada);
+        atualizarCalendario();
+    }
 }
 
-document.querySelectorAll('.btn-modo-agenda').forEach(b => b.addEventListener('click', () => definirModoAgenda(b.dataset.modo)));
+document.querySelectorAll('.btn-modo-agenda').forEach(b => {
+    b.addEventListener('click', () => definirModoAgenda(b.dataset.modo));
+});
 
 const btnMesAnterior = document.getElementById('btn-mes-anterior');
 const btnMesProximo = document.getElementById('btn-mes-proximo');
-if (btnMesAnterior) btnMesAnterior.addEventListener('click', () => { mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() - 1, 1); atualizarCalendario(); });
-if (btnMesProximo) btnMesProximo.addEventListener('click', () => { mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() + 1, 1); atualizarCalendario(); });
+
+if (btnMesAnterior) {
+    btnMesAnterior.addEventListener('click', () => {
+        mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() - 1, 1);
+        atualizarCalendario();
+    });
+}
+
+if (btnMesProximo) {
+    btnMesProximo.addEventListener('click', () => {
+        mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() + 1, 1);
+        atualizarCalendario();
+    });
+}
 
 // --- NOTA EM PDF ---
 let temporizadorNota = null;
@@ -934,43 +999,64 @@ let urlPreviaAtual = null;
 function coletarDadosDaNota() {
     const chave = chaveDia(semanaSelecionada);
     const dias = [];
+
     for (let dia = 0; dia < 7; dia++) {
         const semanaAgenda = agendaPorSemana[chave] || {};
         const semanaFin = financeiroPorSemana[chave] || {};
         const itensDoDia = [];
+
         for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
             const campo = `${hIndex}-${dia}`;
             const atividade = (semanaAgenda[campo] || '').trim();
             const fin = semanaFin[campo];
             const valorNum = fin && Number(fin.valor) > 0 ? Number(fin.valor) : 0;
             const tipoValido = fin && (fin.tipo === 'entrada' || fin.tipo === 'saida') ? fin.tipo : '';
+
             if (atividade !== '' || valorNum > 0) {
                 const horaText = (hIndex + HORA_INICIAL) < 10 ? `0${hIndex + HORA_INICIAL}:00` : `${hIndex + HORA_INICIAL}:00`;
-                itensDoDia.push({ hora: horaText, atividade: atividade || 'Lançamento financeiro', tipo: valorNum > 0 ? tipoValido : '', valor: valorNum });
+                itensDoDia.push({
+                    hora: horaText,
+                    atividade: atividade || 'Lançamento financeiro',
+                    tipo: valorNum > 0 ? tipoValido : '',
+                    valor: valorNum
+                });
             }
         }
         dias.push({ itens: itensDoDia });
     }
-    return { usuario: usuarioLogadoNome || 'Utilizador PlaniFy', semanaInicio: semanaSelecionada, emissao: new Date(), dias };
+
+    return {
+        usuario: usuarioLogadoNome || 'Utilizador PlaniFy',
+        semanaInicio: semanaSelecionada,
+        emissao: new Date(),
+        dias
+    };
 }
 
 function atualizarNotaAoVivo() {
     const status = document.getElementById('nota-status');
     const iframe = document.getElementById('iframe-previa-nota');
     if (!window.PlanifyNota) return;
+
     if (temporizadorNota) clearTimeout(temporizadorNota);
+
     temporizadorNota = setTimeout(() => {
         try {
             const resultado = window.PlanifyNota.gerarNotaPDF(coletarDadosDaNota());
             const blob = new Blob([resultado.bytes], { type: 'application/pdf' });
+
             if (urlPreviaAtual) URL.revokeObjectURL(urlPreviaAtual);
             urlPreviaAtual = URL.createObjectURL(blob);
+
             if (iframe) iframe.src = urlPreviaAtual;
+
             if (status) {
                 status.textContent = `Nota atualizada · ${resultado.resumo.registros} registos · Saldo: ${window.PlanifyNota.moedaComSinal(resultado.resumo.saldo)}`;
                 status.style.color = '#2ecc71';
             }
-        } catch (erro) {}
+        } catch (erro) {
+            console.error('Erro ao atualizar prévia da nota:', erro);
+        }
     }, 250);
 }
 
@@ -980,36 +1066,74 @@ const btnFecharPrevia = document.getElementById('btn-fechar-previa');
 const btnBaixarNota = document.getElementById('btn-baixar-nota');
 const menuFormatosNota = document.getElementById('menu-formatos-nota');
 
-if (btnPreviaNota && painelPreviaNota) btnPreviaNota.addEventListener('click', () => { painelPreviaNota.classList.toggle('oculto'); if (!painelPreviaNota.classList.contains('oculto')) atualizarNotaAoVivo(); });
-if (btnFecharPrevia && painelPreviaNota) btnFecharPrevia.addEventListener('click', () => painelPreviaNota.classList.add('oculto'));
+if (btnPreviaNota && painelPreviaNota) {
+    btnPreviaNota.addEventListener('click', () => {
+        painelPreviaNota.classList.toggle('oculto');
+        if (!painelPreviaNota.classList.contains('oculto')) atualizarNotaAoVivo();
+    });
+}
+
+if (btnFecharPrevia && painelPreviaNota) {
+    btnFecharPrevia.addEventListener('click', () => painelPreviaNota.classList.add('oculto'));
+}
 
 if (btnBaixarNota && menuFormatosNota) {
-    btnBaixarNota.addEventListener('click', (e) => { e.stopPropagation(); const aberto = menuFormatosNota.classList.toggle('oculto'); btnBaixarNota.setAttribute('aria-expanded', !aberto); });
-    window.addEventListener('click', () => { if (!menuFormatosNota.classList.contains('oculto')) { menuFormatosNota.classList.add('oculto'); btnBaixarNota.setAttribute('aria-expanded', 'false'); } });
+    btnBaixarNota.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const aberto = menuFormatosNota.classList.toggle('oculto');
+        btnBaixarNota.setAttribute('aria-expanded', !aberto);
+    });
+
+    window.addEventListener('click', () => {
+        if (!menuFormatosNota.classList.contains('oculto')) {
+            menuFormatosNota.classList.add('oculto');
+            btnBaixarNota.setAttribute('aria-expanded', 'false');
+        }
+    });
+
     menuFormatosNota.querySelectorAll('button[data-formato]').forEach(b => {
         b.addEventListener('click', () => {
             const formato = b.dataset.formato;
             menuFormatosNota.classList.add('oculto');
+
             if (formato === 'pdf') {
                 const resultado = window.PlanifyNota.gerarNotaPDF(coletarDadosDaNota());
                 const url = URL.createObjectURL(new Blob([resultado.bytes], { type: 'application/pdf' }));
-                const a = document.createElement('a'); a.href = url; a.download = resultado.nomeArquivo; a.click();
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = resultado.nomeArquivo;
+                a.click();
             } else if (formato === 'xml-nfe') {
-                baixarTextoComoArquivo(`<?xml version="1.0" encoding="UTF-8"?><nfeProc versao="4.00"><NFe><infNFe><emit><xNome>${escapeXML(usuarioLogadoNome)}</xNome></emit></infNFe></NFe></nfeProc>`, 'PlaniFy_NFe.xml', 'application/xml');
+                baixarTextoComoArquivo(
+                    `<?xml version="1.0" encoding="UTF-8"?><nfeProc versao="4.00"><NFe><infNFe><emit><xNome>${escapeXML(usuarioLogadoNome)}</xNome></emit></infNFe></NFe></nfeProc>`,
+                    'PlaniFy_NFe.xml',
+                    'application/xml'
+                );
             } else if (formato === 'xml-planify') {
-                baixarTextoComoArquivo(`<?xml version="1.0" encoding="UTF-8"?><PlaniFy><Usuario>${escapeXML(usuarioLogadoNome)}</Usuario></PlaniFy>`, `PlaniFy_Dados_${chaveDia(semanaSelecionada)}.xml`, 'application/xml');
+                baixarTextoComoArquivo(
+                    `<?xml version="1.0" encoding="UTF-8"?><PlaniFy><Usuario>${escapeXML(usuarioLogadoNome)}</Usuario></PlaniFy>`,
+                    `PlaniFy_Dados_${chaveDia(semanaSelecionada)}.xml`,
+                    'application/xml'
+                );
             }
         });
     });
 }
 
 function escapeXML(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
 
 function baixarTextoComoArquivo(conteudo, nome, mime) {
     const url = URL.createObjectURL(new Blob([conteudo], { type: mime + ';charset=utf-8;' }));
-    const a = document.createElement('a'); a.href = url; a.download = nome; a.click();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nome;
+    a.click();
 }
 
 // --- LEMBRETES (SINCRONIZADOS NA NUVEM) ---
@@ -1020,13 +1144,23 @@ const btnAtivarNotificacoes = document.getElementById('btn-ativar-notificacoes')
 if (formNovoLembrete) {
     formNovoLembrete.addEventListener('submit', (e) => {
         e.preventDefault();
+
         const titulo = document.getElementById('lembrete-titulo').value.trim();
         const valor = parseFloat(document.getElementById('lembrete-valor').value) || 0;
         const data = document.getElementById('lembrete-data').value;
         const hora = document.getElementById('lembrete-hora').value;
 
         if (!titulo || !data || !hora) return;
-        listaLembretes.push({ id: Date.now(), titulo, valor, data, hora, concluido: false });
+
+        listaLembretes.push({
+            id: Date.now(),
+            titulo,
+            valor,
+            data,
+            hora,
+            concluido: false
+        });
+
         sincronizarDadosComNuvem();
         formNovoLembrete.reset();
         renderizarLembretes();
@@ -1036,6 +1170,7 @@ if (formNovoLembrete) {
 function renderizarLembretes() {
     if (!containerListaLembretes) return;
     containerListaLembretes.innerHTML = '';
+
     if (listaLembretes.length === 0) {
         containerListaLembretes.innerHTML = '<p class="notif-vazia">Nenhum lembrete de pagamento agendado</p>';
         return;
@@ -1045,6 +1180,7 @@ function renderizarLembretes() {
         const card = document.createElement('div');
         card.classList.add('card-item-lembrete');
         if (l.concluido) card.classList.add('pago');
+
         card.innerHTML = `
             <div class="info-lembrete">
                 <h4>${escapeXML(l.titulo)}</h4>
@@ -1055,6 +1191,7 @@ function renderizarLembretes() {
                 <button class="btn-acao-lembrete" onclick="excluirLembrete(${l.id})">🗑</button>
             </div>
         `;
+
         containerListaLembretes.appendChild(card);
     });
 }
