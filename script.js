@@ -28,8 +28,8 @@ const btnPainelAdmin = document.getElementById('btn-painel-admin');
 const btnSuporte = document.getElementById('btn-suporte');
 const abaBtnAdmin = document.getElementById('aba-btn-admin');
 
-// Código de acesso do Administrador
-const CODIGO_ADMIN_PADRAO = "PLANIFY-ADMIN-2026-SECURE";
+// Códigos de acesso válidos do Administrador
+const CODIGOS_ADMIN_VALIDOS = ["PLANIFY-ADMIN-2026-SECURE", "PLANIFY-ADM-2026-SECURE"];
 
 // --- PERSISTÊNCIA REAL DE SESSÃO ---
 let usuarioLogadoEmail = localStorage.getItem('planify_sessao_ativa') || '';
@@ -333,9 +333,9 @@ if (btnSuporte) {
 if (btnPainelAdmin) {
     btnPainelAdmin.addEventListener('click', () => {
         dropdownMenu.classList.remove('mostrar');
-        const codigoDigitado = prompt("Digite o código de acesso administrativo:");
+        const codigoDigitado = prompt("Digite o código de acesso administrativo:")?.trim();
 
-        if (codigoDigitado === CODIGO_ADMIN_PADRAO) {
+        if (CODIGOS_ADMIN_VALIDOS.includes(codigoDigitado)) {
             if (abaBtnAdmin) abaBtnAdmin.style.display = 'inline-block';
 
             document.querySelectorAll('.btn-aba').forEach(b => b.classList.remove('ativa'));
