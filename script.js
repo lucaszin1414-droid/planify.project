@@ -1540,4 +1540,99 @@ setInterval(() => {
 document.addEventListener('DOMContentLoaded', () => {
     renderizarSemana();
     renderizarLembretes();
-});
+}); 
+// --- FUNÇÕES OPERACIONAIS DO PAINEL ADMIN ---
+
+function carregarTabelaUsuariosAdmin() {
+    const corpoTabela = document.getElementById('admin-corpo-tabela-usuarios');
+    if (!corpoTabela) return;
+    corpoTabela.innerHTML = '';
+
+    let usuariosEncontrados = 0;
+
+    for (let i = 0; i < localStorage.length; i++) {
+        const chave = localStorage.key(i);
+        // Identifica contas de usuários (chaves que contêm '@' e não são metadados)
+        if (chave && chave.includes('@') && !chave.includes('planify_')) {
+            try {
+                const dadosUsuario = JSON.parse(localStorage.getItem(chave));
+                if (dadosUsuario && dadosUsuario.usuario) {
+                    usuariosEncontrados++;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${escapeXML(dadosUsuario.usuario)}</td>
+                        <td>${escapeXML(chave)}</td>
+                        <td>
+                            <button type="button" onclick="adminExcluirConta('${escapeXML(chave)}')" style="padding: 4px 8px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Excluir</button>
+                        </td>
+                    `;
+                    corpoTabela.appendChild(tr);
+                }
+            } catch (e) {}
+        }
+    }
+
+    if (usuariosEncontrados === 0) {
+        corpoTabela.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #a3c1ad;">Nenhum usuário cadastrado além de você.</td></tr>`;
+    }
+}
+
+window.adminExcluirConta = function(emailUsuario) {
+    if (confirm(`Tem certeza que deseja excluir a conta de ${emailUsuario}? Esta ação é irreversível.`)) {
+        localStorage.removeItem(emailUsuario);
+        alert('Conta removida com sucesso.');
+        atualizarMetricasAdmin();
+        carregarTabelaUsuariosAdmin();
+    }
+};
+
+// Disparar aviso global para o sininho de todos
+const formAdminAviso = document.getElementById('form-admin-aviso');
+if (formAdminAviso) {
+    formAdminAviso.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const titulo = document.getElementById('admin-aviso-titulo').value.trim();
+        const texto = document.getElementById('admin-aviso-texto').value.trim();
+
+        if (!titulo || !texto) return;
+
+        // Salva uma notificação global que será lida por qualquer sessão ativa
+        const avisoGlobal = {
+            id: Date.now(),
+            titulo: `[AVISO ADMIN] ${titulo}`,
+            valor: texto, // reaproveitamos o campo para exibir a mensagem
+            horario: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            lida: false
+        };
+
+        let historicoGeral = JSON.parse(localStorage.getItem('historico_notifs_capivara')) || [];
+        historicoGeral.unshift(avisoGlobal);
+        localStorage.setItem('historico_notifs_capivara', JSON.stringify(historicoGeral));
+
+        formAdminAviso.reset();
+        alert('Aviso global disparado com sucesso! Ele aparecerá no sininho dos usuários.');
+        renderizarPainelNotificacoes();
+    });
+}
+
+// Botão de Backup Geral em JSON
+const btnAdminBackup = document.getElementById('btn-admin-backup');
+if (btnAdminBackup) {
+    btnAdminBackup.addEventListener('click', () => {
+        const dadosGerais = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const chave = localStorage.key(i);
+            dadosGerais[chave] = localStorage.getItem(chave);
+        }
+
+        const blob = new Blob([JSON.stringify(dadosGerais, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `PlaniFy_Backup_Admin_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+}
