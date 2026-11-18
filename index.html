@@ -8,34 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    
-</head><!-- SDKs do Firebase (Versão 10) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        // Configuração do seu projeto Firebase (Substitua pelos dados do seu Console do Firebase)
-        const firebaseConfig = {
-            apiKey: "SUA_API_KEY_AQUI",
-            authDomain: "seu-projeto.firebaseapp.com",
-            projectId: "seu-projeto",
-            storageBucket: "seu-projeto.appspot.com",
-            messagingSenderId: "SEU_SENDER_ID",
-            appId: "SEU_APP_ID"
-        };
-
-        // Inicializa o Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // Disponibiliza globalmente para o script.js usar
-        window.db = db;
-    </script>
-
-    <script src="nota-pdf.js"></script>
-    <script src="script.js"></script>
-    <script src="landing.js"></script>
-</html>
+</head>
 <body>
 
     <!-- 1. TELA INICIAL (Deslogado) -->
@@ -569,6 +542,33 @@
             </form>
         </div>
     </div>
+
+    <!-- Inicialização do Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA4SJD60jBSCbMdLrj5Q4Ih2y5RkEW0k0k",
+            authDomain: "projeto-planify.firebaseapp.com",
+            projectId: "projeto-planify",
+            storageBucket: "projeto-planify.firebasestorage.app",
+            messagingSenderId: "1021430412947",
+            appId: "1:1021430412947:web:bc2cfdc2f0198b757bff66",
+            measurementId: "G-77PR0VLNEW"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.firebaseDB = {
+            db, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy
+        };
+
+        window.dispatchEvent(new Event('firebasePronto'));
+    </script>
 
     <script src="nota-pdf.js"></script>
     <script src="script.js"></script>
