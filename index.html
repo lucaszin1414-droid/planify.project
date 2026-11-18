@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>projetoplanify </title>
+    <title>PlaniFy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
     <!-- 1. TELA INICIAL (Deslogado) -->
     <div id="tela-inicial" class="tela ativa">
 
-        <!-- Barra de navegação (aparece ao rolar a página) -->
+        <!-- Barra de navegação -->
         <nav id="nav-landing" class="nav-landing" aria-label="Navegação da página">
             <a href="#topo" class="nav-marca">PlaniFy</a>
             <div class="nav-links">
@@ -78,17 +78,15 @@
             </div>
         </section>
 
-        <!-- SEÇÃO: QUEM SOMOS (PREENCHER) -->
+        <!-- SEÇÃO: QUEM SOMOS -->
         <section id="quem-somos" class="secao secao-media">
             <div class="secao-conteudo">
                 <p class="secao-rotulo reveal">Quem Somos</p>
                 <h2 class="secao-titulo reveal">Conheça a equipe</h2>
 
-                <!-- PREENCHER: texto de apresentação da equipe -->
                 <p class="texto-placeholder reveal">[Espaço reservado: escreva aqui a apresentação da equipe e do projeto.]</p>
 
                 <div class="equipe-grade">
-                    <!-- PREENCHER: um card por integrante (copie e cole o bloco abaixo para adicionar mais, ou apague para reduzir) -->
                     <article class="card-membro reveal">
                         <div class="avatar-membro">?</div>
                         <h3>[Nome do integrante]</h3>
@@ -108,7 +106,7 @@
             </div>
         </section>
 
-        <!-- SEÇÃO: FUNCIONALIDADES, COMO FUNCIONA E APLICAÇÕES -->
+        <!-- SEÇÃO: FUNCIONALIDADES -->
         <section id="funcionalidades" class="secao secao-escura">
             <div class="secao-conteudo">
                 <p class="secao-rotulo reveal">Funcionalidades</p>
@@ -189,7 +187,7 @@
             </div>
         </section>
 
-        <!-- RODAPÉ / CONTATO (PREENCHER) -->
+        <!-- RODAPÉ / CONTATO -->
         <footer id="contato" class="rodape-site">
             <div class="rodape-grade">
                 <div>
@@ -210,32 +208,31 @@
                 <div>
                     <h4>Contato</h4>
                     <ul class="lista-contato">
-                        <!-- PREENCHER: troque o texto entre colchetes e o endereço do href -->
-                        <li><span class="icone-contato">✉️</span><a href="mailto:COLOQUE_O_EMAIL_AQUI" class="campo-pendente">[seu-email@exemplo.com]</a></li>
-                        <li><span class="icone-contato">📞</span><a href="tel:COLOQUE_O_NUMERO_AQUI" class="campo-pendente">[(00) 00000-0000]</a></li>
-                        <li><span class="icone-contato">📸</span><a href="https://instagram.com/COLOQUE_O_USUARIO_AQUI" target="_blank" rel="noopener" class="campo-pendente">[@seu_instagram]</a></li>
+                        <li><span class="icone-contato">✉️</span><a href="mailto:projetoplanify@gmail.com" class="campo-pendente">projetoplanify@gmail.com</a></li>
+                        <li><span class="icone-contato">📞</span><a href="tel:5500000000000" class="campo-pendente">[(00) 00000-0000]</a></li>
+                        <li><span class="icone-contato">📸</span><a href="https://instagram.com/planify" target="_blank" rel="noopener" class="campo-pendente">[@planify]</a></li>
                     </ul>
                 </div>
             </div>
             <p class="rodape-copy">&copy; 2026 PlaniFy. Todos os direitos reservados.</p>
         </footer>
 
-        <!-- Botão de voltar ao topo -->
         <button type="button" id="btn-voltar-topo" class="btn-voltar-topo" aria-label="Voltar ao topo">&#8593;</button>
     </div>
 
     <!-- 2. TELA PRINCIPAL (Logado) -->
     <div id="tela-logado" class="tela">
         <header class="topo-logado">
-            <!-- Abas de Navegação (Canto Superior Esquerdo) -->
+            <!-- Abas de Navegação -->
             <nav class="abas-navegacao">
                 <button type="button" class="btn-aba ativa" data-aba="aba-principal">Tela Principal</button>
                 <button type="button" class="btn-aba" data-aba="aba-organizacao">Organização Semanal</button>
                 <button type="button" class="btn-aba" data-aba="aba-financeiro">Financeiro</button>
                 <button type="button" class="btn-aba" data-aba="aba-lembretes">Lembretes</button>
+                <button type="button" class="btn-aba" data-aba="aba-admin" id="aba-btn-admin" style="display: none;">Painel Admin</button>
             </nav>
 
-            <!-- Canto Superior Direito: Sininho de Notificações + Menu Hambúrguer -->
+            <!-- Canto Superior Direito -->
             <div class="controles-topo-direito">
                 <!-- Sininho de Notificações -->
                 <div class="notificacao-container">
@@ -258,6 +255,8 @@
                 <div class="menu-container">
                     <button id="btn-menu-hamburguer" class="btn-hamburguer" type="button">&#9776;</button>
                     <div id="dropdown-menu" class="dropdown-conteudo">
+                        <button id="btn-painel-admin" type="button">Painel Admin</button>
+                        <button id="btn-suporte" type="button">Suporte</button>
                         <button id="btn-trocar-conta" type="button">Trocar de Conta</button>
                         <button id="btn-configuracoes" type="button">Configurações</button>
                         <button id="btn-desconectar" class="btn-sair" type="button">Desconectar</button>
@@ -267,7 +266,7 @@
         </header>
 
         <main class="conteudo-principal-logado">
-            <!-- CONTEÚDO DA ABA 1: TELA PRINCIPAL -->
+            <!-- ABA 1: TELA PRINCIPAL -->
             <section id="aba-principal" class="conteudo-aba ativa">
                 <div class="boas-vindas-container">
                     <img src="capivara.jpeg" alt="Capivara" class="imagem-capivara-boas-vindas">
@@ -276,7 +275,7 @@
                 </div>
             </section>
 
-            <!-- CONTEÚDO DA ABA 2: ORGANIZAÇÃO SEMANAL -->
+            <!-- ABA 2: ORGANIZAÇÃO SEMANAL -->
             <section id="aba-organizacao" class="conteudo-aba">
                 <h2>Agenda e Organização Semanal</h2>
 
@@ -296,7 +295,6 @@
                     </div>
                 </div>
 
-                <!-- Calendário mensal (aparece na visão Mensal) -->
                 <div id="painel-calendario" class="painel-calendario oculto">
                     <div class="calendario-cabecalho">
                         <button type="button" id="btn-mes-anterior" class="btn-nav-semana" aria-label="Mês anterior" title="Mês anterior">&#8249;</button>
@@ -321,14 +319,12 @@
                                 <th>Domingo</th>
                             </tr>
                         </thead>
-                        <tbody id="corpo-tabela-agenda">
-                            <!-- Gerado via Script -->
-                        </tbody>
+                        <tbody id="corpo-tabela-agenda"></tbody>
                     </table>
                 </div>
             </section>
 
-            <!-- CONTEÚDO DA ABA 3: FINANCEIRO -->
+            <!-- ABA 3: FINANCEIRO -->
             <section id="aba-financeiro" class="conteudo-aba">
                 <div class="financeiro-cabecalho">
                     <h2>Controle Financeiro Integrado</h2>
@@ -357,7 +353,7 @@
                                     <button type="button" id="btn-baixar-nota" class="btn-nota-primario" aria-haspopup="true" aria-expanded="false">Baixar nota &#9662;</button>
                                     <div id="menu-formatos-nota" class="menu-formatos oculto" role="menu">
                                         <button type="button" role="menuitem" data-formato="pdf">PDF (.pdf)<small>Documento para ler e imprimir</small></button>
-                                        <button type="button" role="menuitem" data-formato="xml-nfe">XML NF-e (.xml)<small>Estrutura da NF-e 4.00 · rascunho sem valor fiscal (só entradas)</small></button>
+                                        <button type="button" role="menuitem" data-formato="xml-nfe">XML NF-e (.xml)<small>Estrutura da NF-e 4.00 · rascunho sem valor fiscal</small></button>
                                         <button type="button" role="menuitem" data-formato="xml-planify">XML PlaniFy (.xml)<small>Todos os dados da semana</small></button>
                                     </div>
                                 </div>
@@ -367,10 +363,9 @@
                     </div>
                 </div>
 
-                <!-- Pré-visualização ao vivo da nota em PDF -->
                 <div id="painel-previa-nota" class="painel-previa-nota oculto">
                     <div class="previa-cabecalho">
-                        <span id="previa-status">Pré-visualização ao vivo: atualiza sozinha quando você mexe nas planilhas. O horário final da nota é o do clique em "Baixar nota".</span>
+                        <span id="previa-status">Pré-visualização ao vivo: atualiza sozinha quando você mexe nas planilhas.</span>
                         <button type="button" id="btn-fechar-previa" class="btn-fechar-previa" aria-label="Fechar pré-visualização">&times;</button>
                     </div>
                     <iframe id="iframe-previa-nota" title="Pré-visualização da nota em PDF"></iframe>
@@ -391,9 +386,7 @@
                                     <th>Domingo</th>
                                 </tr>
                             </thead>
-                            <tbody id="corpo-tabela-financeira">
-                                <!-- Gerado via Script -->
-                            </tbody>
+                            <tbody id="corpo-tabela-financeira"></tbody>
                             <tfoot>
                                 <tr id="linha-balanco-diario">
                                     <td><strong>Balanço do Dia</strong></td>
@@ -420,27 +413,22 @@
                                 <h3 id="resumo-balanco-geral">R$ 0,00</h3>
                             </div>
                         </div>
-                        <div id="detalhes-lista-financeira" class="detalhes-lista">
-                            <!-- Gerado via Script -->
-                        </div>
+                        <div id="detalhes-lista-financeira" class="detalhes-lista"></div>
                     </div>
                 </div>
             </section>
 
-            <!-- CONTEÚDO DA ABA 4: LEMBRETES DE PAGAMENTO -->
+            <!-- ABA 4: LEMBRETES DE PAGAMENTO -->
             <section id="aba-lembretes" class="conteudo-aba">
                 <h2>Agenda de Lembretes e Pagamentos</h2>
-                
                 <div class="lembretes-container">
-                    <!-- Formulário de Novo Lembrete -->
                     <div class="card-lembrete-form">
                         <h3>Novo Lembrete de Pagamento</h3>
                         <form id="form-novo-lembrete">
                             <div class="campo-grupo">
                                 <label for="lembrete-titulo">Descrição / Pagamento:</label>
-                                <input type="text" id="lembrete-titulo" placeholder="Ex: Conta de Luz, Fatura do Cartão" required>
+                                <input type="text" id="lembrete-titulo" placeholder="Ex: Conta de Luz" required>
                             </div>
-                            
                             <div class="linha-dupla">
                                 <div class="campo-grupo">
                                     <label for="lembrete-valor">Valor (R$):</label>
@@ -455,12 +443,10 @@
                                     <input type="time" id="lembrete-hora" required>
                                 </div>
                             </div>
-
                             <button type="submit" id="btn-salvar-lembrete">Agendar Lembrete</button>
                         </form>
                     </div>
 
-                    <!-- Lista de Lembretes Agendados -->
                     <div class="card-lembretes-lista">
                         <div class="lembretes-lista-cabecalho">
                             <h3>Lembretes Agendados</h3>
@@ -468,10 +454,33 @@
                                 🔔 Ativar Notificações do Navegador
                             </button>
                         </div>
-                        <div id="container-lista-lembretes" class="lista-cards-lembretes">
-                            <!-- Cards de Lembretes inseridos via JS -->
+                        <div id="container-lista-lembretes" class="lista-cards-lembretes"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 5: PAINEL ADMINISTRATIVO (Protegido) -->
+            <section id="aba-admin" class="conteudo-aba">
+                <h2>Painel Administrativo do PlaniFy</h2>
+                <div class="resumo-semanal-card">
+                    <h3>Métricas Globais do Sistema (Privacidade Protegida)</h3>
+                    <div class="metricas-resumo">
+                        <div class="card-metrica">
+                            <span>Usuários Cadastrados</span>
+                            <h3 id="admin-total-usuarios">0</h3>
+                        </div>
+                        <div class="card-metrica">
+                            <span>Contas Ativas Logadas</span>
+                            <h3 id="admin-usuarios-logados">0</h3>
+                        </div>
+                        <div class="card-metrica">
+                            <span>Registros Totais Hoje</span>
+                            <h3 id="admin-registros-hoje">0</h3>
                         </div>
                     </div>
+                    <p style="text-align: center; color: #a3c1ad; font-size: 13px; margin-top: 15px;">
+                        🔒 Modo de segurança ativo: Nenhuma atividade ou dado financeiro individual é exposto. Apenas contadores agregados.
+                    </p>
                 </div>
             </section>
         </main>
