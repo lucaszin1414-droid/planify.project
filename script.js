@@ -31,18 +31,18 @@ const abaBtnAdmin = document.getElementById('aba-btn-admin');
 // Códigos de acesso válidos do Administrador
 const CODIGOS_ADMIN_VALIDOS = ["PLANIFY-ADMIN-2026-SECURE", "PLANIFY-ADM-2026-SECURE"];
 
-// --- PERSISTÊNCIA REAL DE SESSÃO ---
+// --- PERSISTÊNCIA DE SESSÃO ---
 let usuarioLogadoEmail = localStorage.getItem('planify_sessao_ativa') || '';
 let usuarioLogadoNome = localStorage.getItem('planify_nome_ativo') || '';
 
-// --- LÓGICA DO SININHO E CENTRAL DE NOTIFICAÇÕES ---
+// --- LÓGICA DO SININHO E CENTRAL DE NOTIFICAÇÕES (NUVEM + LOCAL) ---
 const btnSininho = document.getElementById('btn-sininho');
 const dropdownNotificacoes = document.getElementById('dropdown-notificacoes');
 const badgeNotificacao = document.getElementById('badge-notificacao');
 const listaNotificacoes = document.getElementById('lista-notificacoes');
 const btnLimparNotifs = document.getElementById('btn-limpar-notifs');
 
-let listaHistoricoNotifs = JSON.parse(localStorage.getItem('historico_notifs_capivara')) || [];
+let listaHistoricoNotifs = [];
 
 if (btnSininho) {
     btnSininho.addEventListener('click', (e) => {
@@ -56,31 +56,34 @@ if (btnSininho) {
 if (btnLimparNotifs) {
     btnLimparNotifs.addEventListener('click', () => {
         listaHistoricoNotifs = [];
-        localStorage.setItem('historico_notifs_capivara', JSON.stringify(listaHistoricoNotifs));
         renderizarPainelNotificacoes();
     });
 }
 
-function adicionarNovaNotificacao(titulo, valor) {
-    const novaNotif = {
-        id: Date.now(),
-        titulo,
-        valor,
-        horario: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        lida: false
-    };
-
-    listaHistoricoNotifs.unshift(novaNotif);
-    localStorage.setItem('historico_notifs_capivara', JSON.stringify(listaHistoricoNotifs));
-    renderizarPainelNotificacoes();
+async function carregarAvisosGlobaisDaNuvem() {
+    if (!window.firebaseDB) return;
+    const { db, collection, getDocs } = window.firebaseDB;
+    try {
+        const snapshot = await getDocs(collection(db, "avisos_globais"));
+        const avisosNuvem = [];
+        snapshot.forEach((docSnap) => {
+            avisosNuvem.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        avisosNuvem.sort((a, b) => b.timestamp - a.timestamp);
+        listaHistoricoNotifs = avisosNuvem;
+        renderizarPainelNotificacoes();
+    } catch (e) {
+        console.error("Erro ao carregar avisos:", e);
+    }
 }
 
 function renderizarPainelNotificacoes() {
     if (!listaNotificacoes) return;
-
     listaNotificacoes.innerHTML = '';
 
-    const naoLidas = listaHistoricoNotifs.filter(n => !n.lida).length;
+    const lidasLocal = JSON.parse(localStorage.getItem('planify_notifs_lidas') || '[]');
+    const naoLidas = listaHistoricoNotifs.filter(n => !lidasLocal.includes(String(n.id))).length;
+
     if (badgeNotificacao) {
         if (naoLidas > 0) {
             badgeNotificacao.textContent = naoLidas;
@@ -99,20 +102,19 @@ function renderizarPainelNotificacoes() {
         const item = document.createElement('div');
         item.classList.add('item-notificacao', 'alerta-pagamento');
         item.innerHTML = `
-            <strong>⏰ ${notif.titulo}</strong>
-            <span>${notif.valor ? 'Valor: R$ ' + Number(notif.valor).toFixed(2) + ' — ' : ''}${notif.horario}</span>
+            <strong>📢 ${escapeXML(notif.titulo)}</strong>
+            <span>${escapeXML(String(notif.mensagem || notif.valor || ''))} — ${notif.horario || ''}</span>
         `;
         listaNotificacoes.appendChild(item);
     });
 }
 
 function marcarNotificacoesComoLidas() {
-    listaHistoricoNotifs = listaHistoricoNotifs.map(n => ({ ...n, lida: true }));
-    localStorage.setItem('historico_notifs_capivara', JSON.stringify(listaHistoricoNotifs));
+    const ids = listaHistoricoNotifs.map(n => String(n.id));
+    localStorage.setItem('planify_notifs_lidas', JSON.stringify(ids));
     if (badgeNotificacao) badgeNotificacao.classList.add('oculta');
 }
 
-// Título de boas-vindas
 const boasVindasTitulo = document.getElementById('boas-vindas-titulo');
 
 // --- ESTADO GLOBAL DA APLICAÇÃO ---
@@ -124,7 +126,6 @@ const nomesDosMeses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho
 const HORA_INICIAL = 7;
 const TOTAL_HORAS = 16;
 
-// --- DATAS E SEMANAS ---
 function adicionarDias(data, quantidade) {
     return new Date(data.getFullYear(), data.getMonth(), data.getDate() + quantidade);
 }
@@ -163,25 +164,54 @@ function mesDaSemana(inicioSemana) {
     return new Date(quinta.getFullYear(), quinta.getMonth(), 1);
 }
 
-// --- DADOS POR SEMANA ---
-function lerDoArmazenamento(chave) {
+// --- DADOS NA NUVEM (FIRESTORE) ---
+let agendaPorSemana = {};
+let financeiroPorSemana = {};
+let listaLembretes = [];
+
+async function carregarDadosDoUsuarioDaNuvem() {
+    if (!window.firebaseDB || !usuarioLogadoEmail) return;
+    const { db, doc, getDoc } = window.firebaseDB;
+
     try {
-        return JSON.parse(localStorage.getItem(chave)) || {};
+        const docRef = doc(db, "dados_usuarios", usuarioLogadoEmail);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const dados = docSnap.data();
+            agendaPorSemana = dados.agenda || {};
+            financeiroPorSemana = dados.financeiro || {};
+            listaLembretes = dados.lembretes || [];
+        } else {
+            agendaPorSemana = {};
+            financeiroPorSemana = {};
+            listaLembretes = [];
+        }
+        renderizarSemana();
+        renderizarLembretes();
     } catch (erro) {
-        return {};
+        console.error("Erro ao carregar dados do utilizador:", erro);
     }
 }
 
-function salvarNoArmazenamento(chave, dados) {
-    try {
-        localStorage.setItem(chave, JSON.stringify(dados));
-    } catch (erro) {
-        console.warn('Não foi possível salvar os dados no navegador.', erro);
-    }
+let timeoutSalvarNuvem = null;
+function sincronizarDadosComNuvem() {
+    if (!window.firebaseDB || !usuarioLogadoEmail) return;
+    clearTimeout(timeoutSalvarNuvem);
+    timeoutSalvarNuvem = setTimeout(async () => {
+        const { db, doc, setDoc } = window.firebaseDB;
+        try {
+            await setDoc(doc(db, "dados_usuarios", usuarioLogadoEmail), {
+                agenda: agendaPorSemana,
+                financeiro: financeiroPorSemana,
+                lembretes: listaLembretes,
+                ultimaAtualizacao: new Date().toISOString()
+            }, { merge: true });
+        } catch (erro) {
+            console.error("Erro ao guardar na nuvem:", erro);
+        }
+    }, 600);
 }
-
-let agendaPorSemana = lerDoArmazenamento('planify_agenda');
-let financeiroPorSemana = lerDoArmazenamento('planify_financeiro');
 
 function textoAgenda(chaveSemana, hIndex, diaIndex) {
     const semana = agendaPorSemana[chaveSemana];
@@ -199,8 +229,7 @@ function salvarTextoAgenda(hIndex, diaIndex, texto) {
         delete agendaPorSemana[chave][campo];
         if (Object.keys(agendaPorSemana[chave]).length === 0) delete agendaPorSemana[chave];
     }
-
-    salvarNoArmazenamento('planify_agenda', agendaPorSemana);
+    sincronizarDadosComNuvem();
 }
 
 function itemFinanceiro(chaveSemana, hIndex, diaIndex) {
@@ -208,10 +237,9 @@ function itemFinanceiro(chaveSemana, hIndex, diaIndex) {
     return (semana && semana[`${hIndex}-${diaIndex}`]) || { valor: 0, tipo: 'entrada' };
 }
 
-// --- ABRIR E FECHAR MODAIS ---
+// --- MODAIS DE CADASTRO E LOGIN ---
 if (btnCadastroHeader) btnCadastroHeader.addEventListener('click', () => modalCadastro.style.display = 'block');
 if (btnLoginHeader) btnLoginHeader.addEventListener('click', () => modalLogin.style.display = 'block');
-
 if (fecharCadastro) fecharCadastro.addEventListener('click', () => modalCadastro.style.display = 'none');
 if (fecharLogin) fecharLogin.addEventListener('click', () => modalLogin.style.display = 'none');
 
@@ -220,58 +248,87 @@ window.addEventListener('click', (event) => {
     if (event.target === modalLogin) modalLogin.style.display = 'none';
 });
 
-// --- LÓGICA DE CADASTRO ---
+// --- CADASTRO NO FIREBASE ---
 if (formCadastro) {
-    formCadastro.addEventListener('submit', (e) => {
+    formCadastro.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const usuario = document.getElementById('cad-usuario').value;
-        const email = document.getElementById('cad-email').value;
+        if (!window.firebaseDB) return alert("A aguardar ligação com a nuvem...");
+
+        const usuario = document.getElementById('cad-usuario').value.trim();
+        const email = document.getElementById('cad-email').value.trim().toLowerCase();
         const senha = document.getElementById('cad-senha').value;
 
-        const novoUsuario = { usuario, email, senha };
-        localStorage.setItem(email, JSON.stringify(novoUsuario));
+        const { db, doc, getDoc, setDoc } = window.firebaseDB;
+        try {
+            const userRef = doc(db, "usuarios", email);
+            const userSnap = await getDoc(userRef);
 
-        alert('Cadastro realizado com sucesso! Agora você pode fazer o login.');
-        formCadastro.reset();
-        modalCadastro.style.display = 'none';
+            if (userSnap.exists()) {
+                alert('Este e-mail já está registado!');
+                return;
+            }
+
+            await setDoc(userRef, {
+                usuario,
+                email,
+                senha,
+                criadoEm: new Date().toISOString()
+            });
+
+            alert('Cadastro realizado na nuvem com sucesso! Agora podes fazer o login.');
+            formCadastro.reset();
+            modalCadastro.style.display = 'none';
+        } catch (erro) {
+            alert('Erro ao cadastrar: ' + erro.message);
+        }
     });
 }
 
-// --- LÓGICA DE LOGIN ---
+// --- LOGIN NO FIREBASE ---
 if (formLogin) {
-    formLogin.addEventListener('submit', (e) => {
+    formLogin.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('login-email').value;
+        if (!window.firebaseDB) return alert("A aguardar ligação com a nuvem...");
+
+        const email = document.getElementById('login-email').value.trim().toLowerCase();
         const senha = document.getElementById('login-senha').value;
 
-        const contaSalva = localStorage.getItem(email);
-        if (!contaSalva) {
-            alert('Usuário não cadastrado! Faça o cadastro primeiro.');
-            return;
-        }
+        const { db, doc, getDoc } = window.firebaseDB;
+        try {
+            const userRef = doc(db, "usuarios", email);
+            const userSnap = await getDoc(userRef);
 
-        const usuarioObj = JSON.parse(contaSalva);
-        if (usuarioObj.senha === senha) {
-            formLogin.reset();
-            modalLogin.style.display = 'none';
+            if (!userSnap.exists()) {
+                alert('Utilizador não encontrado! Faz o cadastro primeiro.');
+                return;
+            }
 
-            usuarioLogadoNome = usuarioObj.usuario;
-            usuarioLogadoEmail = email;
-            localStorage.setItem('planify_sessao_ativa', email);
-            localStorage.setItem('planify_nome_ativo', usuarioObj.usuario);
+            const usuarioObj = userSnap.data();
+            if (usuarioObj.senha === senha) {
+                formLogin.reset();
+                modalLogin.style.display = 'none';
 
-            ativarSessaoLogada();
-        } else {
-            alert('Senha incorreta! Tente novamente.');
+                usuarioLogadoNome = usuarioObj.usuario;
+                usuarioLogadoEmail = email;
+                localStorage.setItem('planify_sessao_ativa', email);
+                localStorage.setItem('planify_nome_ativo', usuarioObj.usuario);
+
+                await ativarSessaoLogada();
+            } else {
+                alert('Senha incorreta! Tenta novamente.');
+            }
+        } catch (erro) {
+            alert('Erro ao iniciar sessão: ' + erro.message);
         }
     });
 }
 
-function ativarSessaoLogada() {
+async function ativarSessaoLogada() {
     boasVindasTitulo.innerText = `Bem-vindo(a), ${usuarioLogadoNome}!`;
     telaInicial.classList.remove('ativa');
     telaLogado.classList.add('ativa');
-    renderizarSemana();
+    await carregarDadosDoUsuarioDaNuvem();
+    await carregarAvisosGlobaisDaNuvem();
 }
 
 // --- MENU HAMBÚRGUER ---
@@ -288,7 +345,6 @@ window.addEventListener('click', () => {
     }
 });
 
-// --- OPÇÕES DO MENU ---
 if (btnTrocarConta) {
     btnTrocarConta.addEventListener('click', () => {
         dropdownMenu.classList.remove('mostrar');
@@ -329,7 +385,7 @@ if (btnSuporte) {
     });
 }
 
-// PAINEL ADMIN PROTEGIDO
+// PAINEL ADMIN PROTEGIDO (CONECTADO AO FIRESTORE)
 if (btnPainelAdmin) {
     btnPainelAdmin.addEventListener('click', () => {
         dropdownMenu.classList.remove('mostrar');
@@ -353,122 +409,132 @@ if (btnPainelAdmin) {
     });
 }
 
-function atualizarMetricasAdmin() {
-    let totalUsuarios = 0;
-    let registrosHoje = 0;
+async function atualizarMetricasAdmin() {
+    if (!window.firebaseDB) return;
+    const { db, collection, getDocs } = window.firebaseDB;
 
-    for (let i = 0; i < localStorage.length; i++) {
-        const chave = localStorage.key(i);
-        if (chave && chave.includes('@') && !chave.includes('planify_')) {
-            totalUsuarios++;
-        }
-    }
-
-    const agendaGeral = lerDoArmazenamento('planify_agenda');
-    const finGeral = lerDoArmazenamento('planify_financeiro');
-
-    Object.values(agendaGeral).forEach(semana => { registrosHoje += Object.keys(semana).length; });
-    Object.values(finGeral).forEach(semana => { registrosHoje += Object.keys(semana).length; });
-
-    document.getElementById('admin-total-usuarios').textContent = totalUsuarios;
-    document.getElementById('admin-usuarios-logados').textContent = usuarioLogadoEmail ? '1 (Você)' : '0';
-    document.getElementById('admin-registros-hoje').textContent = registrosHoje;
-
-    carregarTabelaUsuariosAdmin();
-}
-
-function carregarTabelaUsuariosAdmin() {
     const corpoTabela = document.getElementById('admin-corpo-tabela-usuarios');
-    if (!corpoTabela) return;
-    corpoTabela.innerHTML = '';
+    if (corpoTabela) corpoTabela.innerHTML = '<tr><td colspan="3" style="text-align:center;">A carregar dados da nuvem...</td></tr>';
 
-    let usuariosEncontrados = 0;
+    try {
+        const usersSnap = await getDocs(collection(db, "usuarios"));
+        const dadosSnap = await getDocs(collection(db, "dados_usuarios"));
 
-    for (let i = 0; i < localStorage.length; i++) {
-        const chave = localStorage.key(i);
-        if (chave && chave.includes('@') && !chave.includes('planify_')) {
-            try {
-                const dadosUsuario = JSON.parse(localStorage.getItem(chave));
-                if (dadosUsuario && dadosUsuario.usuario) {
-                    usuariosEncontrados++;
+        let totalUsuarios = 0;
+        let registrosGlobais = 0;
+        const listaUsuarios = [];
+
+        usersSnap.forEach((docSnap) => {
+            totalUsuarios++;
+            listaUsuarios.push(docSnap.data());
+        });
+
+        // Soma apenas a contagem de registos para preservar a privacidade total
+        dadosSnap.forEach((docSnap) => {
+            const d = docSnap.data();
+            if (d.agenda) {
+                Object.values(d.agenda).forEach(sem => { registrosGlobais += Object.keys(sem).length; });
+            }
+            if (d.financeiro) {
+                Object.values(d.financeiro).forEach(sem => { registrosGlobais += Object.keys(sem).length; });
+            }
+        });
+
+        document.getElementById('admin-total-usuarios').textContent = totalUsuarios;
+        document.getElementById('admin-usuarios-logados').textContent = totalUsuarios > 0 ? `${totalUsuarios} na base` : '0';
+        document.getElementById('admin-registros-hoje').textContent = registrosGlobais;
+
+        if (corpoTabela) {
+            corpoTabela.innerHTML = '';
+            if (listaUsuarios.length === 0) {
+                corpoTabela.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #a3c1ad;">Nenhum utilizador registado ainda.</td></tr>';
+            } else {
+                listaUsuarios.forEach(u => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${escapeXML(dadosUsuario.usuario)}</td>
-                        <td>${escapeXML(chave)}</td>
+                        <td>${escapeXML(u.usuario)}</td>
+                        <td>${escapeXML(u.email)}</td>
                         <td>
-                            <button type="button" onclick="adminExcluirConta('${escapeXML(chave)}')" style="padding: 4px 8px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Excluir</button>
+                            <button type="button" onclick="adminExcluirConta('${escapeXML(u.email)}')" style="padding: 4px 8px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Excluir</button>
                         </td>
                     `;
                     corpoTabela.appendChild(tr);
-                }
-            } catch (e) {}
+                });
+            }
         }
-    }
-
-    if (usuariosEncontrados === 0) {
-        corpoTabela.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #a3c1ad;">Nenhum usuário cadastrado além de você.</td></tr>`;
+    } catch (erro) {
+        console.error("Erro ao carregar métricas admin:", erro);
     }
 }
 
-window.adminExcluirConta = function(emailUsuario) {
-    if (confirm(`Tem certeza que deseja excluir a conta de ${emailUsuario}? Esta ação é irreversível.`)) {
-        localStorage.removeItem(emailUsuario);
-        alert('Conta removida com sucesso.');
-        atualizarMetricasAdmin();
+window.adminExcluirConta = async function(emailUsuario) {
+    if (!window.firebaseDB) return;
+    if (confirm(`Tens a certeza que desejas excluir a conta de ${emailUsuario} da nuvem?`)) {
+        const { db, doc, deleteDoc } = window.firebaseDB;
+        try {
+            await deleteDoc(doc(db, "usuarios", emailUsuario));
+            await deleteDoc(doc(db, "dados_usuarios", emailUsuario));
+            alert('Conta removida da nuvem com sucesso.');
+            atualizarMetricasAdmin();
+        } catch (e) {
+            alert('Erro ao excluir conta: ' + e.message);
+        }
     }
 };
 
-// Disparar aviso global para o sininho de todos
+// Disparar aviso global na nuvem para todos os utilizadores
 const formAdminAviso = document.getElementById('form-admin-aviso');
 if (formAdminAviso) {
-    formAdminAviso.addEventListener('submit', (e) => {
+    formAdminAviso.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (!window.firebaseDB) return;
+
         const titulo = document.getElementById('admin-aviso-titulo').value.trim();
         const texto = document.getElementById('admin-aviso-texto').value.trim();
-
         if (!titulo || !texto) return;
 
-        const avisoGlobal = {
-            id: Date.now(),
-            titulo: `[AVISO ADMIN] ${titulo}`,
-            valor: texto,
-            horario: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            lida: false
-        };
+        const { db, doc, setDoc } = window.firebaseDB;
+        const idAviso = String(Date.now());
 
-        let historicoGeral = JSON.parse(localStorage.getItem('historico_notifs_capivara')) || [];
-        historicoGeral.unshift(avisoGlobal);
-        localStorage.setItem('historico_notifs_capivara', JSON.stringify(historicoGeral));
+        try {
+            await setDoc(doc(db, "avisos_globais", idAviso), {
+                titulo: `[AVISO ADMIN] ${titulo}`,
+                mensagem: texto,
+                horario: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                timestamp: Date.now()
+            });
 
-        formAdminAviso.reset();
-        alert('Aviso global disparado com sucesso! Ele aparecerá no sininho dos usuários.');
-        renderizarPainelNotificacoes();
+            formAdminAviso.reset();
+            alert('Aviso global publicado na nuvem! Aparecerá no sininho de todos os utilizadores.');
+            await carregarAvisosGlobaisDaNuvem();
+        } catch (erro) {
+            alert('Erro ao publicar aviso: ' + erro.message);
+        }
     });
 }
 
-// Botão de Backup Geral em JSON
+// Botão de Backup Geral em JSON (da nuvem)
 const btnAdminBackup = document.getElementById('btn-admin-backup');
 if (btnAdminBackup) {
-    btnAdminBackup.addEventListener('click', () => {
-        const dadosGerais = {};
-        for (let i = 0; i < localStorage.length; i++) {
-            const chave = localStorage.key(i);
-            dadosGerais[chave] = localStorage.getItem(chave);
-        }
+    btnAdminBackup.addEventListener('click', async () => {
+        if (!window.firebaseDB) return;
+        const { db, collection, getDocs } = window.firebaseDB;
+        const usersSnap = await getDocs(collection(db, "usuarios"));
+        const backup = [];
+        usersSnap.forEach(d => backup.push({ email: d.id, usuario: d.data().usuario, criadoEm: d.data().criadoEm }));
 
-        const blob = new Blob([JSON.stringify(dadosGerais, null, 2)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `PlaniFy_Backup_Admin_${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = `PlaniFy_Backup_Usuarios_${new Date().toISOString().slice(0, 10)}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
     });
 }
 
-// --- LÓGICA DE ABAS DA NAVEGAÇÃO ---
+// --- LÓGICA DE ABAS ---
 const botoesAba = document.querySelectorAll('.btn-aba');
 const conteudosAba = document.querySelectorAll('.conteudo-aba');
 
@@ -495,7 +561,7 @@ botoesAba.forEach(botao => {
     });
 });
 
-// --- CABEÇALHOS DAS TABELAS ---
+// --- TABELAS E RESTANTE DA INTERFACE ---
 function atualizarCabecalhosDatas() {
     const seletores = ['#aba-organizacao thead th', '#visao-grade-financeira thead th'];
     const hoje = new Date();
@@ -510,11 +576,9 @@ function atualizarCabecalhosDatas() {
     });
 }
 
-// --- GERADOR DA TABELA DE ORGANIZAÇÃO SEMANAL ---
 function gerarTabelaAgenda() {
     const corpoTabela = document.getElementById('corpo-tabela-agenda');
     if (!corpoTabela) return;
-    
     corpoTabela.innerHTML = '';
 
     const chave = chaveDia(semanaSelecionada);
@@ -523,10 +587,8 @@ function gerarTabelaAgenda() {
     for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
         const hora = hIndex + HORA_INICIAL;
         const tr = document.createElement('tr');
-        
         const tdHorario = document.createElement('td');
-        const horaFormatada = hora < 10 ? `0${hora}:00` : `${hora}:00`;
-        tdHorario.textContent = horaFormatada;
+        tdHorario.textContent = hora < 10 ? `0${hora}:00` : `${hora}:00`;
         tdHorario.classList.add('coluna-horario');
         tr.appendChild(tdHorario);
 
@@ -534,13 +596,9 @@ function gerarTabelaAgenda() {
             const tdDia = document.createElement('td');
             tdDia.contentEditable = "true";
             tdDia.classList.add('celula-agenda');
-            tdDia.dataset.horaIndex = hIndex;
-            tdDia.dataset.diaIndex = dia;
             tdDia.textContent = textoAgenda(chave, hIndex, dia);
 
-            if (mesmoDia(adicionarDias(semanaSelecionada, dia), hoje)) {
-                tdDia.classList.add('coluna-hoje');
-            }
+            if (mesmoDia(adicionarDias(semanaSelecionada, dia), hoje)) tdDia.classList.add('coluna-hoje');
 
             tdDia.addEventListener('input', () => {
                 const texto = tdDia.innerText.trim();
@@ -552,16 +610,13 @@ function gerarTabelaAgenda() {
 
             tr.appendChild(tdDia);
         }
-
         corpoTabela.appendChild(tr);
     }
 }
 
-// --- GERADOR DA TABELA FINANCEIRA ---
 function gerarTabelaFinanceira() {
     const corpoTabela = document.getElementById('corpo-tabela-financeira');
     if (!corpoTabela) return;
-
     corpoTabela.innerHTML = '';
 
     const chave = chaveDia(semanaSelecionada);
@@ -570,18 +625,14 @@ function gerarTabelaFinanceira() {
     for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
         const hora = hIndex + HORA_INICIAL;
         const tr = document.createElement('tr');
-        
         const tdHorario = document.createElement('td');
-        const horaFormatada = hora < 10 ? `0${hora}:00` : `${hora}:00`;
-        tdHorario.textContent = horaFormatada;
+        tdHorario.textContent = hora < 10 ? `0${hora}:00` : `${hora}:00`;
         tdHorario.classList.add('coluna-horario');
         tr.appendChild(tdHorario);
 
         for (let dia = 0; dia < 7; dia++) {
             const td = document.createElement('td');
-            if (mesmoDia(adicionarDias(semanaSelecionada, dia), hoje)) {
-                td.classList.add('coluna-hoje');
-            }
+            if (mesmoDia(adicionarDias(semanaSelecionada, dia), hoje)) td.classList.add('coluna-hoje');
 
             const container = document.createElement('div');
             container.classList.add('celula-financeira-container');
@@ -596,7 +647,6 @@ function gerarTabelaFinanceira() {
             inputValor.step = '0.01';
             inputValor.placeholder = 'R$ 0,00';
             inputValor.classList.add('input-valor-financeiro');
-            inputValor.id = `input-fin-${hIndex}-${dia}`;
 
             const item = itemFinanceiro(chave, hIndex, dia);
             if (item.valor > 0) {
@@ -613,10 +663,8 @@ function gerarTabelaFinanceira() {
             td.appendChild(container);
             tr.appendChild(td);
         }
-
         corpoTabela.appendChild(tr);
     }
-
     gerarLinhaBalancoDiario();
     calcularBalancos();
 }
@@ -624,7 +672,6 @@ function gerarTabelaFinanceira() {
 function gerarLinhaBalancoDiario() {
     const linhaBalanco = document.getElementById('linha-balanco-diario');
     if (!linhaBalanco) return;
-
     linhaBalanco.innerHTML = '<td><strong>Balanço do Dia</strong></td>';
     const hoje = new Date();
 
@@ -633,14 +680,11 @@ function gerarLinhaBalancoDiario() {
         tdBalanco.id = `balanco-dia-${dia}`;
         tdBalanco.style.fontWeight = 'bold';
         tdBalanco.textContent = 'R$ 0,00';
-        if (mesmoDia(adicionarDias(semanaSelecionada, dia), hoje)) {
-            tdBalanco.classList.add('coluna-hoje');
-        }
+        if (mesmoDia(adicionarDias(semanaSelecionada, dia), hoje)) tdBalanco.classList.add('coluna-hoje');
         linhaBalanco.appendChild(tdBalanco);
     }
 }
 
-// --- CONTROLES DA ABA FINANCEIRO ---
 const btnsTipoTransacao = document.querySelectorAll('.btn-tipo-transacao');
 btnsTipoTransacao.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -655,11 +699,9 @@ btnsVisao.forEach(btn => {
     btn.addEventListener('click', () => {
         btnsVisao.forEach(b => b.classList.remove('ativa'));
         btn.classList.add('ativa');
-
         const visao = btn.getAttribute('data-visao');
         const painelGrade = document.getElementById('visao-grade-financeira');
         const painelResumo = document.getElementById('visao-resumo-financeiro');
-
         if (visao === 'grade') {
             painelGrade.classList.add('ativa');
             painelResumo.classList.remove('ativa');
@@ -674,50 +716,34 @@ btnsVisao.forEach(btn => {
 function salvarValorFinanceiro(hIndex, diaIndex, valor, inputElement) {
     const chave = chaveDia(semanaSelecionada);
     const campo = `${hIndex}-${diaIndex}`;
-
     if (!financeiroPorSemana[chave]) financeiroPorSemana[chave] = {};
 
     if (valor <= 0) {
         delete financeiroPorSemana[chave][campo];
         inputElement.classList.remove('valor-entrada', 'valor-saida');
     } else {
-        financeiroPorSemana[chave][campo] = {
-            valor: valor,
-            tipo: tipoTransacaoAtual
-        };
-
-        if (tipoTransacaoAtual === 'entrada') {
-            inputElement.classList.add('valor-entrada');
-            inputElement.classList.remove('valor-saida');
-        } else {
-            inputElement.classList.add('valor-saida');
-            inputElement.classList.remove('valor-entrada');
-        }
+        financeiroPorSemana[chave][campo] = { valor, tipo: tipoTransacaoAtual };
+        inputElement.classList.toggle('valor-entrada', tipoTransacaoAtual === 'entrada');
+        inputElement.classList.toggle('valor-saida', tipoTransacaoAtual !== 'entrada');
     }
-
     if (Object.keys(financeiroPorSemana[chave]).length === 0) delete financeiroPorSemana[chave];
-    salvarNoArmazenamento('planify_financeiro', financeiroPorSemana);
-
+    sincronizarDadosComNuvem();
     calcularBalancos();
     atualizarNotaAoVivo();
 }
 
 function atualizarAtividadeEspelhada(hIndex, diaIndex, texto) {
     const span = document.getElementById(`ativ-fin-${hIndex}-${diaIndex}`);
-    if (span) {
-        span.textContent = texto !== '' ? texto : '-';
-    }
+    if (span) span.textContent = texto !== '' ? texto : '-';
 }
 
 function atualizarEspelhamentoEBalancos() {
     const chave = chaveDia(semanaSelecionada);
-
     for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
         for (let dia = 0; dia < 7; dia++) {
             atualizarAtividadeEspelhada(hIndex, dia, textoAgenda(chave, hIndex, dia));
         }
     }
-
     calcularBalancos();
 }
 
@@ -728,40 +754,25 @@ function calcularBalancos() {
 
     for (let dia = 0; dia < 7; dia++) {
         let balancoDia = 0;
-
         for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
             const item = dados[`${hIndex}-${dia}`];
             if (item && item.valor > 0) {
-                if (item.tipo === 'entrada') {
-                    balancoDia += item.valor;
-                    totalEntradasGeral += item.valor;
-                } else {
-                    balancoDia -= item.valor;
-                    totalSaidasGeral += item.valor;
-                }
+                if (item.tipo === 'entrada') { balancoDia += item.valor; totalEntradasGeral += item.valor; }
+                else { balancoDia -= item.valor; totalSaidasGeral += item.valor; }
             }
         }
-
         const tdBalanco = document.getElementById(`balanco-dia-${dia}`);
         if (tdBalanco) {
             tdBalanco.textContent = `R$ ${balancoDia.toFixed(2)}`;
-            if (balancoDia > 0) {
-                tdBalanco.style.color = '#2ecc71';
-            } else if (balancoDia < 0) {
-                tdBalanco.style.color = '#e74c3c';
-            } else {
-                tdBalanco.style.color = '#ffffff';
-            }
+            tdBalanco.style.color = balancoDia > 0 ? '#2ecc71' : (balancoDia < 0 ? '#e74c3c' : '#ffffff');
         }
     }
 
     const resEntradas = document.getElementById('resumo-total-entradas');
     const resSaidas = document.getElementById('resumo-total-saidas');
     const resBalanco = document.getElementById('resumo-balanco-geral');
-
     if (resEntradas) resEntradas.textContent = `R$ ${totalEntradasGeral.toFixed(2)}`;
     if (resSaidas) resSaidas.textContent = `R$ ${totalSaidasGeral.toFixed(2)}`;
-    
     const balancoGeral = totalEntradasGeral - totalSaidasGeral;
     if (resBalanco) {
         resBalanco.textContent = `R$ ${balancoGeral.toFixed(2)}`;
@@ -772,15 +783,12 @@ function calcularBalancos() {
 function atualizarResumoSemanal() {
     const listaDetalhes = document.getElementById('detalhes-lista-financeira');
     if (!listaDetalhes) return;
-
     listaDetalhes.innerHTML = '';
     let encontrouTransacao = false;
-
     const chave = chaveDia(semanaSelecionada);
 
     for (let dia = 0; dia < 7; dia++) {
         const dataDoDia = adicionarDias(semanaSelecionada, dia);
-
         for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
             const item = itemFinanceiro(chave, hIndex, dia);
             if (item.valor > 0) {
@@ -792,32 +800,17 @@ function atualizarResumoSemanal() {
 
                 const divItem = document.createElement('div');
                 divItem.classList.add('item-transacao-detalhe');
-
-                const spanEsquerdo = document.createElement('span');
-                const destaque = document.createElement('strong');
-                destaque.textContent = `${diasDaSemana[dia]} ${formatarDataCurta(dataDoDia)} (${horaText})`;
-                spanEsquerdo.appendChild(destaque);
-                spanEsquerdo.appendChild(document.createTextNode(` - ${escapeXML(nomeAtividade)}`));
-
-                const spanDireito = document.createElement('span');
-                spanDireito.style.color = cor;
-                const valorForte = document.createElement('strong');
-                valorForte.textContent = `${sinal} R$ ${item.valor.toFixed(2)}`;
-                spanDireito.appendChild(valorForte);
-
-                divItem.appendChild(spanEsquerdo);
-                divItem.appendChild(spanDireito);
+                divItem.innerHTML = `
+                    <span><strong>${diasDaSemana[dia]} ${formatarDataCurta(dataDoDia)} (${horaText})</strong> - ${escapeXML(nomeAtividade)}</span>
+                    <span style="color: ${cor};"><strong>${sinal} R$ ${item.valor.toFixed(2)}</strong></span>
+                `;
                 listaDetalhes.appendChild(divItem);
             }
         }
     }
-
-    if (!encontrouTransacao) {
-        listaDetalhes.innerHTML = '<p style="text-align: center; color: #aaaaaa; padding: 10px;">Nenhuma movimentação lançada nesta semana.</p>';
-    }
+    if (!encontrouTransacao) listaDetalhes.innerHTML = '<p style="text-align: center; color: #aaaaaa; padding: 10px;">Nenhuma movimentação lançada nesta semana.</p>';
 }
 
-// --- SELEÇÃO DE SEMANA ---
 function irParaSemana(dataQualquer) {
     semanaSelecionada = inicioDaSemana(dataQualquer);
     mesExibido = mesDaSemana(semanaSelecionada);
@@ -835,10 +828,8 @@ function descreverSemana() {
     const mudaDeAno = semanaSelecionada.getFullYear() !== fim.getFullYear();
     const inicioTexto = mudaDeAno ? formatarDataCompleta(semanaSelecionada) : formatarDataCurta(semanaSelecionada);
     const titulo = `Semana de ${inicioTexto} a ${formatarDataCompleta(fim)}`;
-
     const diferenca = Math.round((semanaSelecionada - inicioDaSemana(new Date())) / (7 * 24 * 60 * 60 * 1000));
     let subtitulo = diferenca === 0 ? 'Semana atual' : (diferenca === 1 ? 'Próxima semana' : (diferenca === -1 ? 'Semana passada' : (diferenca > 1 ? `Daqui a ${diferenca} semanas` : `Há ${Math.abs(diferenca)} semanas`)));
-
     return { titulo, subtitulo };
 }
 
@@ -856,7 +847,6 @@ function atualizarCalendario() {
     const ano = mesExibido.getFullYear();
     const mes = mesExibido.getMonth();
     tituloMes.textContent = `${nomesDosMeses[mes]} de ${ano}`;
-
     grade.innerHTML = '';
 
     const cabecalho = document.createElement('div');
@@ -876,7 +866,6 @@ function atualizarCalendario() {
     while (inicioLinha <= ultimoDoMes) {
         const inicioDestaLinha = inicioLinha;
         const chaveLinha = chaveDia(inicioDestaLinha);
-        const fimDestaLinha = adicionarDias(inicioDestaLinha, 6);
         const anotacoes = agendaPorSemana[chaveLinha] || {};
         const camposPreenchidos = Object.keys(anotacoes);
 
@@ -888,11 +877,9 @@ function atualizarCalendario() {
             const data = adicionarDias(inicioDestaLinha, d);
             const celula = document.createElement('div');
             celula.classList.add('calendario-dia');
-
             if (data.getMonth() !== mes) celula.classList.add('fora-do-mes');
             if (mesmoDia(data, hoje)) celula.classList.add('hoje');
             if (camposPreenchidos.some(campo => campo.endsWith(`-${d}`))) celula.classList.add('tem-atividade');
-
             const numero = document.createElement('span');
             numero.textContent = data.getDate();
             celula.appendChild(numero);
@@ -911,17 +898,14 @@ function renderizarSemana() {
     gerarTabelaFinanceira();
     atualizarNavegadoresSemana();
     atualizarCalendario();
-
     const painelResumo = document.getElementById('visao-resumo-financeiro');
     if (painelResumo && painelResumo.classList.contains('ativa')) atualizarResumoSemanal();
-
     atualizarNotaAoVivo();
 }
 
 document.addEventListener('click', (e) => {
     const botao = e.target.closest('[data-nav]');
     if (!botao) return;
-
     const acao = botao.dataset.nav;
     if (acao === 'anterior') irParaSemana(adicionarDias(semanaSelecionada, -7));
     else if (acao === 'proxima') irParaSemana(adicionarDias(semanaSelecionada, 7));
@@ -930,52 +914,18 @@ document.addEventListener('click', (e) => {
 
 function definirModoAgenda(modo) {
     modoAgenda = modo;
-    document.querySelectorAll('.btn-modo-agenda').forEach(botao => {
-        botao.classList.toggle('ativa', botao.dataset.modo === modo);
-    });
-
+    document.querySelectorAll('.btn-modo-agenda').forEach(b => b.classList.toggle('ativa', b.dataset.modo === modo));
     const painel = document.getElementById('painel-calendario');
     if (painel) painel.classList.toggle('oculto', modo !== 'mensal');
-
-    if (modo === 'mensal') {
-        mesExibido = mesDaSemana(semanaSelecionada);
-        atualizarCalendario();
-    }
+    if (modo === 'mensal') { mesExibido = mesDaSemana(semanaSelecionada); atualizarCalendario(); }
 }
 
-document.querySelectorAll('.btn-modo-agenda').forEach(botao => {
-    botao.addEventListener('click', () => definirModoAgenda(botao.dataset.modo));
-});
+document.querySelectorAll('.btn-modo-agenda').forEach(b => b.addEventListener('click', () => definirModoAgenda(b.dataset.modo)));
 
 const btnMesAnterior = document.getElementById('btn-mes-anterior');
 const btnMesProximo = document.getElementById('btn-mes-proximo');
-
-if (btnMesAnterior) {
-    btnMesAnterior.addEventListener('click', () => {
-        mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() - 1, 1);
-        atualizarCalendario();
-    });
-}
-
-if (btnMesProximo) {
-    btnMesProximo.addEventListener('click', () => {
-        mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() + 1, 1);
-        atualizarCalendario();
-    });
-}
-
-function verificarMudancaDeDia() {
-    const chaveHoje = chaveDia(new Date());
-    if (chaveHoje !== diaAtualChave) {
-        diaAtualChave = chaveHoje;
-        renderizarSemana();
-    }
-}
-
-setInterval(verificarMudancaDeDia, 60000);
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) verificarMudancaDeDia();
-});
+if (btnMesAnterior) btnMesAnterior.addEventListener('click', () => { mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() - 1, 1); atualizarCalendario(); });
+if (btnMesProximo) btnMesProximo.addEventListener('click', () => { mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() + 1, 1); atualizarCalendario(); });
 
 // --- NOTA EM PDF ---
 let temporizadorNota = null;
@@ -984,71 +934,43 @@ let urlPreviaAtual = null;
 function coletarDadosDaNota() {
     const chave = chaveDia(semanaSelecionada);
     const dias = [];
-
     for (let dia = 0; dia < 7; dia++) {
         const semanaAgenda = agendaPorSemana[chave] || {};
         const semanaFin = financeiroPorSemana[chave] || {};
         const itensDoDia = [];
-
         for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
             const campo = `${hIndex}-${dia}`;
             const atividade = (semanaAgenda[campo] || '').trim();
             const fin = semanaFin[campo];
             const valorNum = fin && Number(fin.valor) > 0 ? Number(fin.valor) : 0;
             const tipoValido = fin && (fin.tipo === 'entrada' || fin.tipo === 'saida') ? fin.tipo : '';
-
             if (atividade !== '' || valorNum > 0) {
                 const horaText = (hIndex + HORA_INICIAL) < 10 ? `0${hIndex + HORA_INICIAL}:00` : `${hIndex + HORA_INICIAL}:00`;
-                itensDoDia.push({
-                    hora: horaText,
-                    atividade: atividade !== '' ? atividade : 'Lançamento financeiro',
-                    tipo: valorNum > 0 ? tipoValido : '',
-                    valor: valorNum
-                });
+                itensDoDia.push({ hora: horaText, atividade: atividade || 'Lançamento financeiro', tipo: valorNum > 0 ? tipoValido : '', valor: valorNum });
             }
         }
         dias.push({ itens: itensDoDia });
     }
-
-    return {
-        usuario: usuarioLogadoNome || 'Usuário PlaniFy',
-        semanaInicio: semanaSelecionada,
-        emissao: new Date(),
-        dias
-    };
-}
-
-function gerarBytesPDFDaSemana() {
-    const dados = coletarDadosDaNota();
-    return window.PlanifyNota.gerarNotaPDF(dados);
+    return { usuario: usuarioLogadoNome || 'Utilizador PlaniFy', semanaInicio: semanaSelecionada, emissao: new Date(), dias };
 }
 
 function atualizarNotaAoVivo() {
     const status = document.getElementById('nota-status');
     const iframe = document.getElementById('iframe-previa-nota');
-
+    if (!window.PlanifyNota) return;
     if (temporizadorNota) clearTimeout(temporizadorNota);
-
     temporizadorNota = setTimeout(() => {
         try {
-            const resultado = gerarBytesPDFDaSemana();
+            const resultado = window.PlanifyNota.gerarNotaPDF(coletarDadosDaNota());
             const blob = new Blob([resultado.bytes], { type: 'application/pdf' });
-
             if (urlPreviaAtual) URL.revokeObjectURL(urlPreviaAtual);
             urlPreviaAtual = URL.createObjectURL(blob);
-
             if (iframe) iframe.src = urlPreviaAtual;
-
             if (status) {
-                status.textContent = `Nota atualizada · ${resultado.resumo.registros} registros · Saldo: ${window.PlanifyNota.moedaComSinal(resultado.resumo.saldo)}`;
+                status.textContent = `Nota atualizada · ${resultado.resumo.registros} registos · Saldo: ${window.PlanifyNota.moedaComSinal(resultado.resumo.saldo)}`;
                 status.style.color = '#2ecc71';
             }
-        } catch (erro) {
-            if (status) {
-                status.textContent = 'Erro ao atualizar nota.';
-                status.style.color = '#e74c3c';
-            }
-        }
+        } catch (erro) {}
     }, 250);
 }
 
@@ -1058,65 +980,27 @@ const btnFecharPrevia = document.getElementById('btn-fechar-previa');
 const btnBaixarNota = document.getElementById('btn-baixar-nota');
 const menuFormatosNota = document.getElementById('menu-formatos-nota');
 
-if (btnPreviaNota && painelPreviaNota) {
-    btnPreviaNota.addEventListener('click', () => {
-        painelPreviaNota.classList.toggle('oculto');
-        if (!painelPreviaNota.classList.contains('oculto')) atualizarNotaAoVivo();
-    });
-}
-
-if (btnFecharPrevia && painelPreviaNota) {
-    btnFecharPrevia.addEventListener('click', () => painelPreviaNota.classList.add('oculto'));
-}
+if (btnPreviaNota && painelPreviaNota) btnPreviaNota.addEventListener('click', () => { painelPreviaNota.classList.toggle('oculto'); if (!painelPreviaNota.classList.contains('oculto')) atualizarNotaAoVivo(); });
+if (btnFecharPrevia && painelPreviaNota) btnFecharPrevia.addEventListener('click', () => painelPreviaNota.classList.add('oculto'));
 
 if (btnBaixarNota && menuFormatosNota) {
-    btnBaixarNota.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const aberto = menuFormatosNota.classList.toggle('oculto');
-        btnBaixarNota.setAttribute('aria-expanded', !aberto);
-    });
-
-    window.addEventListener('click', () => {
-        if (!menuFormatosNota.classList.contains('oculto')) {
+    btnBaixarNota.addEventListener('click', (e) => { e.stopPropagation(); const aberto = menuFormatosNota.classList.toggle('oculto'); btnBaixarNota.setAttribute('aria-expanded', !aberto); });
+    window.addEventListener('click', () => { if (!menuFormatosNota.classList.contains('oculto')) { menuFormatosNota.classList.add('oculto'); btnBaixarNota.setAttribute('aria-expanded', 'false'); } });
+    menuFormatosNota.querySelectorAll('button[data-formato]').forEach(b => {
+        b.addEventListener('click', () => {
+            const formato = b.dataset.formato;
             menuFormatosNota.classList.add('oculto');
-            btnBaixarNota.setAttribute('aria-expanded', 'false');
-        }
-    });
-
-    menuFormatosNota.querySelectorAll('button[data-formato]').forEach(botaoFormatos => {
-        botaoFormatos.addEventListener('click', () => {
-            const formato = botaoFormatos.dataset.formato;
-            menuFormatosNota.classList.add('oculto');
-            if (formato === 'pdf') baixarArquivoPDF();
-            else if (formato === 'xml-nfe') baixarXMLNFeRascunho();
-            else if (formato === 'xml-planify') baixarXMLPlanifyCompleto();
+            if (formato === 'pdf') {
+                const resultado = window.PlanifyNota.gerarNotaPDF(coletarDadosDaNota());
+                const url = URL.createObjectURL(new Blob([resultado.bytes], { type: 'application/pdf' }));
+                const a = document.createElement('a'); a.href = url; a.download = resultado.nomeArquivo; a.click();
+            } else if (formato === 'xml-nfe') {
+                baixarTextoComoArquivo(`<?xml version="1.0" encoding="UTF-8"?><nfeProc versao="4.00"><NFe><infNFe><emit><xNome>${escapeXML(usuarioLogadoNome)}</xNome></emit></infNFe></NFe></nfeProc>`, 'PlaniFy_NFe.xml', 'application/xml');
+            } else if (formato === 'xml-planify') {
+                baixarTextoComoArquivo(`<?xml version="1.0" encoding="UTF-8"?><PlaniFy><Usuario>${escapeXML(usuarioLogadoNome)}</Usuario></PlaniFy>`, `PlaniFy_Dados_${chaveDia(semanaSelecionada)}.xml`, 'application/xml');
+            }
         });
     });
-}
-
-function baixarArquivoPDF() {
-    const resultado = gerarBytesPDFDaSemana();
-    const blob = new Blob([resultado.bytes], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = resultado.nomeArquivo;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-function baixarXMLNFeRascunho() {
-    const dados = coletarDadosDaNota();
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<nfeProc versao="4.00"><NFe><infNFe><emit><xNome>${escapeXML(dados.usuario)}</xNome></emit></infNFe></NFe></nfeProc>`;
-    baixarTextoComoArquivo(xml, 'PlaniFy_NFe.xml', 'application/xml');
-}
-
-function baixarXMLPlanifyCompleto() {
-    const chave = chaveDia(semanaSelecionada);
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<PlaniFy><Usuario>${escapeXML(usuarioLogadoNome)}</Usuario></PlaniFy>`;
-    baixarTextoComoArquivo(xml, `PlaniFy_Dados_${chave}.xml`, 'application/xml');
 }
 
 function escapeXML(str) {
@@ -1124,18 +1008,11 @@ function escapeXML(str) {
 }
 
 function baixarTextoComoArquivo(conteudo, nome, mime) {
-    const blob = new Blob([conteudo], { type: mime + ';charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = nome;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const url = URL.createObjectURL(new Blob([conteudo], { type: mime + ';charset=utf-8;' }));
+    const a = document.createElement('a'); a.href = url; a.download = nome; a.click();
 }
 
-// --- LEMBRETES ---
-let listaLembretes = JSON.parse(localStorage.getItem('lembretes_pagamento_capivara')) || [];
+// --- LEMBRETES (SINCRONIZADOS NA NUVEM) ---
 const formNovoLembrete = document.getElementById('form-novo-lembrete');
 const containerListaLembretes = document.getElementById('container-lista-lembretes');
 const btnAtivarNotificacoes = document.getElementById('btn-ativar-notificacoes');
@@ -1150,7 +1027,7 @@ if (formNovoLembrete) {
 
         if (!titulo || !data || !hora) return;
         listaLembretes.push({ id: Date.now(), titulo, valor, data, hora, concluido: false });
-        localStorage.setItem('lembretes_pagamento_capivara', JSON.stringify(listaLembretes));
+        sincronizarDadosComNuvem();
         formNovoLembrete.reset();
         renderizarLembretes();
     });
@@ -1184,13 +1061,13 @@ function renderizarLembretes() {
 
 window.alternarLembrete = (id) => {
     listaLembretes = listaLembretes.map(l => l.id === id ? { ...l, concluido: !l.concluido } : l);
-    localStorage.setItem('lembretes_pagamento_capivara', JSON.stringify(listaLembretes));
+    sincronizarDadosComNuvem();
     renderizarLembretes();
 };
 
 window.excluirLembrete = (id) => {
     listaLembretes = listaLembretes.filter(l => l.id !== id);
-    localStorage.setItem('lembretes_pagamento_capivara', JSON.stringify(listaLembretes));
+    sincronizarDadosComNuvem();
     renderizarLembretes();
 };
 
@@ -1200,9 +1077,8 @@ if (btnAtivarNotificacoes) {
     });
 }
 
-// INICIALIZAÇÃO
-document.addEventListener('DOMContentLoaded', () => {
-    renderizarPainelNotificacoes();
+// INICIALIZAÇÃO QUANDO O FIREBASE ESTIVER PRONTO
+window.addEventListener('firebasePronto', () => {
     if (usuarioLogadoEmail) {
         ativarSessaoLogada();
     }
