@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>projetoplanify </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 1. TELA INICIAL (Deslogado) -->
+    <div id="tela-inicial" class="tela ativa">
+
+        <!-- Barra de navegação (aparece ao rolar a página) -->
+        <nav id="nav-landing" class="nav-landing" aria-label="Navegação da página">
+            <a href="#topo" class="nav-marca">PlaniFy</a>
+            <div class="nav-links">
+                <a href="#sobre" data-secao="sobre">O Projeto</a>
+                <a href="#quem-somos" data-secao="quem-somos">Quem Somos</a>
+                <a href="#funcionalidades" data-secao="funcionalidades">Funcionalidades</a>
+                <a href="#contato" data-secao="contato">Contato</a>
+            </div>
+            <div class="nav-acoes">
+                <button type="button" data-acao="login">Login</button>
+                <button type="button" data-acao="cadastro">Cadastro</button>
+            </div>
+        </nav>
+
+        <!-- PRIMEIRA TELA (HERO) -->
+        <section id="topo" class="hero">
+            <header class="topo">
+                <div class="botoes-topo">
+                    <button type="button" id="btn-login-header">Login</button>
+                    <button type="button" id="btn-cadastro-header">Cadastro</button>
+                </div>
+            </header>
+
+            <main class="conteudo-principal">
+                <h1 class="titulo">PlaniFy</h1>
+            </main>
+
+            <footer class="rodape">
+                <a href="#sobre" class="seta-baixo" aria-label="Rolar para baixo">&#8595;</a>
+            </footer>
+        </section>
+
+        <!-- SEÇÃO: O QUE É O PROJETO -->
+        <section id="sobre" class="secao secao-escura">
+            <div class="secao-conteudo">
+                <p class="secao-rotulo reveal">O Projeto</p>
+                <h2 class="secao-titulo reveal">O que é o PlaniFy?</h2>
+
+                <div class="sobre-grade">
+                    <div class="reveal">
+                        <p class="texto-grande">O PlaniFy é uma plataforma web que reúne, em um só lugar, a organização da sua rotina e o controle das suas finanças.</p>
+                        <p>Ele nasceu para ajudar quem ainda não tem muita intimidade com educação financeira a enxergar, na prática, para onde vão o seu tempo e o seu dinheiro. Você monta a sua semana hora a hora e, em cima dessa mesma grade, registra o que entrou e o que saiu.</p>
+                        <p>Em vez de planilhas complicadas ou conceitos difíceis, o projeto aposta em uma interface simples, visual e direta, pensada para quem está começando a organizar a própria vida financeira.</p>
+                    </div>
+
+                    <div class="destaques">
+                        <div class="destaque reveal" style="--atraso: 0.1s">
+                            <strong>7 dias</strong>
+                            <span>de segunda a domingo, em uma única visão</span>
+                        </div>
+                        <div class="destaque reveal" style="--atraso: 0.2s">
+                            <strong>16 horários</strong>
+                            <span>das 07:00 às 22:00 para planejar o seu dia</span>
+                        </div>
+                        <div class="destaque reveal" style="--atraso: 0.3s">
+                            <strong>1 painel</strong>
+                            <span>rotina e dinheiro andando juntos</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO: QUEM SOMOS (PREENCHER) -->
+        <section id="quem-somos" class="secao secao-media">
+            <div class="secao-conteudo">
+                <p class="secao-rotulo reveal">Quem Somos</p>
+                <h2 class="secao-titulo reveal">Conheça a equipe</h2>
+
+                <!-- PREENCHER: texto de apresentação da equipe -->
+                <p class="texto-placeholder reveal">[Espaço reservado: escreva aqui a apresentação da equipe e do projeto.]</p>
+
+                <div class="equipe-grade">
+                    <!-- PREENCHER: um card por integrante (copie e cole o bloco abaixo para adicionar mais, ou apague para reduzir) -->
+                    <article class="card-membro reveal">
+                        <div class="avatar-membro">?</div>
+                        <h3>[Nome do integrante]</h3>
+                        <p>[Função no projeto]</p>
+                    </article>
+                    <article class="card-membro reveal" style="--atraso: 0.1s">
+                        <div class="avatar-membro">?</div>
+                        <h3>[Nome do integrante]</h3>
+                        <p>[Função no projeto]</p>
+                    </article>
+                    <article class="card-membro reveal" style="--atraso: 0.2s">
+                        <div class="avatar-membro">?</div>
+                        <h3>[Nome do integrante]</h3>
+                        <p>[Função no projeto]</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO: FUNCIONALIDADES, COMO FUNCIONA E APLICAÇÕES -->
+        <section id="funcionalidades" class="secao secao-escura">
+            <div class="secao-conteudo">
+                <p class="secao-rotulo reveal">Funcionalidades</p>
+                <h2 class="secao-titulo reveal">Tudo o que você pode fazer</h2>
+
+                <div class="cards-grade">
+                    <article class="card-func reveal">
+                        <div class="icone">🗓️</div>
+                        <h3>Organização Semanal</h3>
+                        <p>Uma grade de segunda a domingo, das 07:00 às 22:00, onde você escreve as suas atividades direto nas células.</p>
+                    </article>
+                    <article class="card-func reveal" style="--atraso: 0.1s">
+                        <div class="icone">💰</div>
+                        <h3>Financeiro Integrado</h3>
+                        <p>As atividades da sua agenda aparecem na grade financeira. Em cada horário, você lança uma entrada ou uma saída e vê o balanço do dia.</p>
+                    </article>
+                    <article class="card-func reveal" style="--atraso: 0.2s">
+                        <div class="icone">📊</div>
+                        <h3>Resumo Semanal</h3>
+                        <p>Total de entradas, total de saídas e balanço geral da semana, com a lista de todas as movimentações lançadas.</p>
+                    </article>
+                    <article class="card-func reveal" style="--atraso: 0.3s">
+                        <div class="icone">🔔</div>
+                        <h3>Lembretes de Pagamento</h3>
+                        <p>Agende contas com descrição, valor, data e horário. Na hora certa, você recebe um alerta e a notificação fica guardada no sininho.</p>
+                    </article>
+                </div>
+
+                <h3 class="subtitulo-secao reveal">Como funciona</h3>
+
+                <div class="passos">
+                    <div class="passo reveal">
+                        <div class="passo-numero">1</div>
+                        <h4>Crie a sua conta</h4>
+                        <p>Faça o cadastro com nome de usuário, e-mail e senha e entre na plataforma.</p>
+                    </div>
+                    <div class="passo reveal" style="--atraso: 0.1s">
+                        <div class="passo-numero">2</div>
+                        <h4>Monte a sua semana</h4>
+                        <p>Preencha a grade de organização semanal com os seus compromissos e atividades.</p>
+                    </div>
+                    <div class="passo reveal" style="--atraso: 0.2s">
+                        <div class="passo-numero">3</div>
+                        <h4>Registre entradas e saídas</h4>
+                        <p>Na aba Financeiro, escolha Entrada ou Saída e informe o valor no horário correspondente.</p>
+                    </div>
+                    <div class="passo reveal" style="--atraso: 0.3s">
+                        <div class="passo-numero">4</div>
+                        <h4>Acompanhe e seja lembrado</h4>
+                        <p>Veja o balanço do dia e da semana e agende lembretes para não esquecer nenhum pagamento.</p>
+                    </div>
+                </div>
+
+                <h3 class="subtitulo-secao reveal">Para quem é e para onde vamos</h3>
+
+                <div class="aplicacoes-grade">
+                    <article class="card-aplicacao reveal">
+                        <span class="tag-aplicacao">Público inicial</span>
+                        <h3>Jovens, adolescentes e adultos</h3>
+                        <p>Pensado para quem ainda não tem muito conhecimento sobre educação financeira e quer começar a organizar a rotina de gastos e as finanças pessoais.</p>
+                        <ul>
+                            <li>Entender para onde o dinheiro está indo</li>
+                            <li>Criar o hábito de planejar a semana</li>
+                            <li>Não esquecer contas e pagamentos importantes</li>
+                        </ul>
+                    </article>
+                    <article class="card-aplicacao reveal" style="--atraso: 0.15s">
+                        <span class="tag-aplicacao">Próximos passos</span>
+                        <h3>Aplicações em empresas</h3>
+                        <p>No futuro, a proposta é levar o PlaniFy também para o ambiente empresarial, adaptando a organização de rotinas e o controle financeiro para equipes e negócios.</p>
+                        <ul>
+                            <li>Organização de rotinas de trabalho</li>
+                            <li>Acompanhamento de entradas e despesas</li>
+                            <li>Lembretes de pagamentos e vencimentos</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- RODAPÉ / CONTATO (PREENCHER) -->
+        <footer id="contato" class="rodape-site">
+            <div class="rodape-grade">
+                <div>
+                    <h3 class="rodape-marca">PlaniFy</h3>
+                    <p>Organize a sua rotina e entenda as suas finanças em um só lugar.</p>
+                </div>
+
+                <div>
+                    <h4>Navegação</h4>
+                    <ul class="lista-links">
+                        <li><a href="#topo">Início</a></li>
+                        <li><a href="#sobre">O Projeto</a></li>
+                        <li><a href="#quem-somos">Quem Somos</a></li>
+                        <li><a href="#funcionalidades">Funcionalidades</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4>Contato</h4>
+                    <ul class="lista-contato">
+                        <!-- PREENCHER: troque o texto entre colchetes e o endereço do href -->
+                        <li><span class="icone-contato">✉️</span><a href="mailto:COLOQUE_O_EMAIL_AQUI" class="campo-pendente">[seu-email@exemplo.com]</a></li>
+                        <li><span class="icone-contato">📞</span><a href="tel:COLOQUE_O_NUMERO_AQUI" class="campo-pendente">[(00) 00000-0000]</a></li>
+                        <li><span class="icone-contato">📸</span><a href="https://instagram.com/COLOQUE_O_USUARIO_AQUI" target="_blank" rel="noopener" class="campo-pendente">[@seu_instagram]</a></li>
+                    </ul>
+                </div>
+            </div>
+            <p class="rodape-copy">&copy; 2026 PlaniFy. Todos os direitos reservados.</p>
+        </footer>
+
+        <!-- Botão de voltar ao topo -->
+        <button type="button" id="btn-voltar-topo" class="btn-voltar-topo" aria-label="Voltar ao topo">&#8593;</button>
+    </div>
+
+    <!-- 2. TELA PRINCIPAL (Logado) -->
+    <div id="tela-logado" class="tela">
+        <header class="topo-logado">
+            <!-- Abas de Navegação (Canto Superior Esquerdo) -->
+            <nav class="abas-navegacao">
+                <button type="button" class="btn-aba ativa" data-aba="aba-principal">Tela Principal</button>
+                <button type="button" class="btn-aba" data-aba="aba-organizacao">Organização Semanal</button>
+                <button type="button" class="btn-aba" data-aba="aba-financeiro">Financeiro</button>
+                <button type="button" class="btn-aba" data-aba="aba-lembretes">Lembretes</button>
+            </nav>
+
+            <!-- Canto Superior Direito: Sininho de Notificações + Menu Hambúrguer -->
+            <div class="controles-topo-direito">
+                <!-- Sininho de Notificações -->
+                <div class="notificacao-container">
+                    <button id="btn-sininho" class="btn-sininho" type="button" title="Notificações">
+                        🔔
+                        <span id="badge-notificacao" class="badge-notificacao oculta">0</span>
+                    </button>
+                    <div id="dropdown-notificacoes" class="dropdown-conteudo dropdown-notif">
+                        <div class="notif-cabecalho">
+                            <h4>Notificações</h4>
+                            <button id="btn-limpar-notifs" type="button">Limpar</button>
+                        </div>
+                        <div id="lista-notificacoes" class="notif-corpo">
+                            <p class="notif-vazia">Nenhuma notificação nova</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Menu Hambúrguer -->
+                <div class="menu-container">
+                    <button id="btn-menu-hamburguer" class="btn-hamburguer" type="button">&#9776;</button>
+                    <div id="dropdown-menu" class="dropdown-conteudo">
+                        <button id="btn-trocar-conta" type="button">Trocar de Conta</button>
+                        <button id="btn-configuracoes" type="button">Configurações</button>
+                        <button id="btn-desconectar" class="btn-sair" type="button">Desconectar</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="conteudo-principal-logado">
+            <!-- CONTEÚDO DA ABA 1: TELA PRINCIPAL -->
+            <section id="aba-principal" class="conteudo-aba ativa">
+                <div class="boas-vindas-container">
+                    <img src="capivara.jpeg" alt="Capivara" class="imagem-capivara-boas-vindas">
+                    <h1 id="boas-vindas-titulo">Bem-vindo(a)!</h1>
+                    <p class="subtitulo-logado">Você está na área principal do sistema.</p>
+                </div>
+            </section>
+
+            <!-- CONTEÚDO DA ABA 2: ORGANIZAÇÃO SEMANAL -->
+            <section id="aba-organizacao" class="conteudo-aba">
+                <h2>Agenda e Organização Semanal</h2>
+
+                <div class="agenda-controles">
+                    <div class="alternador-visao">
+                        <button type="button" class="btn-modo-agenda ativa" data-modo="semanal">Semanal</button>
+                        <button type="button" class="btn-modo-agenda" data-modo="mensal">Mensal</button>
+                    </div>
+                    <div class="navegador-semana">
+                        <button type="button" class="btn-nav-semana" data-nav="anterior" aria-label="Semana anterior" title="Semana anterior">&#8249;</button>
+                        <div class="semana-info">
+                            <span class="semana-titulo">Semana</span>
+                            <span class="semana-sub"></span>
+                        </div>
+                        <button type="button" class="btn-nav-semana" data-nav="proxima" aria-label="Próxima semana" title="Próxima semana">&#8250;</button>
+                        <button type="button" class="btn-hoje" data-nav="hoje">Hoje</button>
+                    </div>
+                </div>
+
+                <!-- Calendário mensal (aparece na visão Mensal) -->
+                <div id="painel-calendario" class="painel-calendario oculto">
+                    <div class="calendario-cabecalho">
+                        <button type="button" id="btn-mes-anterior" class="btn-nav-semana" aria-label="Mês anterior" title="Mês anterior">&#8249;</button>
+                        <h3 id="titulo-mes">Mês</h3>
+                        <button type="button" id="btn-mes-proximo" class="btn-nav-semana" aria-label="Próximo mês" title="Próximo mês">&#8250;</button>
+                    </div>
+                    <div id="calendario-grade" class="calendario-grade"></div>
+                    <p class="calendario-legenda">Clique em uma semana para selecioná-la &middot; <span class="legenda-ponto"></span> dias com atividades</p>
+                </div>
+
+                <div class="tabela-container">
+                    <table class="tabela-agenda">
+                        <thead>
+                            <tr>
+                                <th>Horário</th>
+                                <th>Segunda</th>
+                                <th>Terça</th>
+                                <th>Quarta</th>
+                                <th>Quinta</th>
+                                <th>Sexta</th>
+                                <th>Sábado</th>
+                                <th>Domingo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpo-tabela-agenda">
+                            <!-- Gerado via Script -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- CONTEÚDO DA ABA 3: FINANCEIRO -->
+            <section id="aba-financeiro" class="conteudo-aba">
+                <div class="financeiro-cabecalho">
+                    <h2>Controle Financeiro Integrado</h2>
+                    <div class="navegador-semana">
+                        <button type="button" class="btn-nav-semana" data-nav="anterior" aria-label="Semana anterior" title="Semana anterior">&#8249;</button>
+                        <div class="semana-info">
+                            <span class="semana-titulo">Semana</span>
+                            <span class="semana-sub"></span>
+                        </div>
+                        <button type="button" class="btn-nav-semana" data-nav="proxima" aria-label="Próxima semana" title="Próxima semana">&#8250;</button>
+                        <button type="button" class="btn-hoje" data-nav="hoje">Hoje</button>
+                    </div>
+                    <div class="controles-financeiros">
+                        <div class="seletor-tipo-transacao">
+                            <button type="button" class="btn-tipo-transacao btn-entrada ativa" data-tipo="entrada">Entrada</button>
+                            <button type="button" class="btn-tipo-transacao btn-saida" data-tipo="saida">Saída</button>
+                        </div>
+                        <div class="alternador-visao">
+                            <button type="button" class="btn-visao ativa" data-visao="grade">Visão Diária/Grade</button>
+                            <button type="button" class="btn-visao" data-visao="resumo">Resumo Semanal</button>
+                        </div>
+                        <div class="acoes-nota">
+                            <div class="acoes-nota-botoes">
+                                <button type="button" id="btn-previa-nota" class="btn-nota-secundario">Pré-visualizar nota</button>
+                                <div class="menu-download">
+                                    <button type="button" id="btn-baixar-nota" class="btn-nota-primario" aria-haspopup="true" aria-expanded="false">Baixar nota &#9662;</button>
+                                    <div id="menu-formatos-nota" class="menu-formatos oculto" role="menu">
+                                        <button type="button" role="menuitem" data-formato="pdf">PDF (.pdf)<small>Documento para ler e imprimir</small></button>
+                                        <button type="button" role="menuitem" data-formato="xml-nfe">XML NF-e (.xml)<small>Estrutura da NF-e 4.00 · rascunho sem valor fiscal (só entradas)</small></button>
+                                        <button type="button" role="menuitem" data-formato="xml-planify">XML PlaniFy (.xml)<small>Todos os dados da semana</small></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <span id="nota-status" class="nota-status"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pré-visualização ao vivo da nota em PDF -->
+                <div id="painel-previa-nota" class="painel-previa-nota oculto">
+                    <div class="previa-cabecalho">
+                        <span id="previa-status">Pré-visualização ao vivo: atualiza sozinha quando você mexe nas planilhas. O horário final da nota é o do clique em "Baixar nota".</span>
+                        <button type="button" id="btn-fechar-previa" class="btn-fechar-previa" aria-label="Fechar pré-visualização">&times;</button>
+                    </div>
+                    <iframe id="iframe-previa-nota" title="Pré-visualização da nota em PDF"></iframe>
+                </div>
+
+                <div id="visao-grade-financeira" class="painel-visao ativa">
+                    <div class="tabela-container">
+                        <table class="tabela-agenda tabela-financeira">
+                            <thead>
+                                <tr>
+                                    <th>Horário</th>
+                                    <th>Segunda</th>
+                                    <th>Terça</th>
+                                    <th>Quarta</th>
+                                    <th>Quinta</th>
+                                    <th>Sexta</th>
+                                    <th>Sábado</th>
+                                    <th>Domingo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="corpo-tabela-financeira">
+                                <!-- Gerado via Script -->
+                            </tbody>
+                            <tfoot>
+                                <tr id="linha-balanco-diario">
+                                    <td><strong>Balanço do Dia</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="visao-resumo-financeiro" class="painel-visao">
+                    <div class="resumo-semanal-card">
+                        <h3>Balanço Consolidado da Semana</h3>
+                        <div class="metricas-resumo">
+                            <div class="card-metrica total-entradas">
+                                <span>Total de Entradas</span>
+                                <h3 id="resumo-total-entradas">R$ 0,00</h3>
+                            </div>
+                            <div class="card-metrica total-saidas">
+                                <span>Total de Saídas</span>
+                                <h3 id="resumo-total-saidas">R$ 0,00</h3>
+                            </div>
+                            <div class="card-metrica balanco-geral">
+                                <span>Balanço Geral</span>
+                                <h3 id="resumo-balanco-geral">R$ 0,00</h3>
+                            </div>
+                        </div>
+                        <div id="detalhes-lista-financeira" class="detalhes-lista">
+                            <!-- Gerado via Script -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CONTEÚDO DA ABA 4: LEMBRETES DE PAGAMENTO -->
+            <section id="aba-lembretes" class="conteudo-aba">
+                <h2>Agenda de Lembretes e Pagamentos</h2>
+                
+                <div class="lembretes-container">
+                    <!-- Formulário de Novo Lembrete -->
+                    <div class="card-lembrete-form">
+                        <h3>Novo Lembrete de Pagamento</h3>
+                        <form id="form-novo-lembrete">
+                            <div class="campo-grupo">
+                                <label for="lembrete-titulo">Descrição / Pagamento:</label>
+                                <input type="text" id="lembrete-titulo" placeholder="Ex: Conta de Luz, Fatura do Cartão" required>
+                            </div>
+                            
+                            <div class="linha-dupla">
+                                <div class="campo-grupo">
+                                    <label for="lembrete-valor">Valor (R$):</label>
+                                    <input type="number" id="lembrete-valor" step="0.01" placeholder="0,00" required>
+                                </div>
+                                <div class="campo-grupo">
+                                    <label for="lembrete-data">Data:</label>
+                                    <input type="date" id="lembrete-data" required>
+                                </div>
+                                <div class="campo-grupo">
+                                    <label for="lembrete-hora">Horário:</label>
+                                    <input type="time" id="lembrete-hora" required>
+                                </div>
+                            </div>
+
+                            <button type="submit" id="btn-salvar-lembrete">Agendar Lembrete</button>
+                        </form>
+                    </div>
+
+                    <!-- Lista de Lembretes Agendados -->
+                    <div class="card-lembretes-lista">
+                        <div class="lembretes-lista-cabecalho">
+                            <h3>Lembretes Agendados</h3>
+                            <button type="button" id="btn-ativar-notificacoes" class="btn-notificacao">
+                                🔔 Ativar Notificações do Navegador
+                            </button>
+                        </div>
+                        <div id="container-lista-lembretes" class="lista-cards-lembretes">
+                            <!-- Cards de Lembretes inseridos via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL DE CADASTRO -->
+    <div id="modal-cadastro" class="modal">
+        <div class="modal-conteudo">
+            <span class="fechar" id="fechar-cadastro">&times;</span>
+            <h2>Cadastro</h2>
+            <form id="form-cadastro">
+                <input type="text" id="cad-usuario" placeholder="Nome de Usuário" required>
+                <input type="email" id="cad-email" placeholder="E-mail" required>
+                <input type="password" id="cad-senha" placeholder="Senha" required>
+                <button type="submit">Cadastrar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE LOGIN -->
+    <div id="modal-login" class="modal">
+        <div class="modal-conteudo">
+            <span class="fechar" id="fechar-login">&times;</span>
+            <h2>Login</h2>
+            <form id="form-login">
+                <input type="email" id="login-email" placeholder="E-mail" required>
+                <input type="password" id="login-senha" placeholder="Senha" required>
+                <button type="submit">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="nota-pdf.js"></script>
+    <script src="script.js"></script>
+    <script src="landing.js"></script>
+</body>
+</html>
