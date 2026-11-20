@@ -68,20 +68,34 @@ if (btnLimparNotifs) {
     });
 }
 
-async function carregarAvisosGlobaisDaNuvem() {
-    if (!window.firebaseDB) return;
-    const { db, collection, getDocs } = window.firebaseDB;
-    try {
-        const snapshot = await getDocs(collection(db, "avisos_globais"));
-        const avisosNuvem = [];
-        snapshot.forEach((docSnap) => {
-            avisosNuvem.push({ id: docSnap.id, ...docSnap.data() });
-        });
-        avisosNuvem.sort((a, b) => b.timestamp - a.timestamp);
-        listaHistoricoNotifs = avisosNuvem;
-        renderizarPainelNotificacoes();
-    } catch (e) {
-        console.error("Erro ao carregar avisos:", e);
+// Escuta em tempo real: qualquer aviso novo aparece no sininho na hora, sem recarregar
+let cancelarEscutaAvisos = null;
+
+function iniciarEscutaDeAvisos() {
+    if (!window.firebaseDB || cancelarEscutaAvisos) return;
+    const { db, collection, onSnapshot } = window.firebaseDB;
+
+    cancelarEscutaAvisos = onSnapshot(
+        collection(db, "avisos_globais"),
+        (snapshot) => {
+            const avisosNuvem = [];
+            snapshot.forEach((docSnap) => {
+                avisosNuvem.push({ id: docSnap.id, ...docSnap.data() });
+            });
+            avisosNuvem.sort((a, b) => b.timestamp - a.timestamp);
+            listaHistoricoNotifs = avisosNuvem;
+            renderizarPainelNotificacoes();
+        },
+        (erro) => {
+            console.error("Erro ao escutar avisos:", erro);
+        }
+    );
+}
+
+function pararEscutaDeAvisos() {
+    if (cancelarEscutaAvisos) {
+        cancelarEscutaAvisos();
+        cancelarEscutaAvisos = null;
     }
 }
 
@@ -383,11 +397,12 @@ async function ativarSessaoLogada() {
     telaInicial.classList.remove('ativa');
     telaLogado.classList.add('ativa');
     await carregarDadosDoUsuarioDaNuvem();
-    await carregarAvisosGlobaisDaNuvem();
+    iniciarEscutaDeAvisos();
 }
 
 function limparSessaoLocal() {
     clearTimeout(timeoutSalvarNuvem);
+    pararEscutaDeAvisos();
     usuarioUid = '';
     usuarioLogadoEmail = '';
     usuarioLogadoNome = '';
@@ -409,6 +424,7 @@ function limparSessaoLocal() {
 
 async function encerrarSessao() {
     clearTimeout(timeoutSalvarNuvem);
+    pararEscutaDeAvisos(); // evita erro de permissão depois que o login sair
     await sincronizarAgora(); // garante que nada se perca antes de sair
     try {
         await window.firebaseDB.signOut(window.firebaseDB.auth);
@@ -591,8 +607,7 @@ if (formAdminAviso) {
             });
 
             formAdminAviso.reset();
-            alert('Aviso global publicado! Aparecerá no sininho de todos os usuários.');
-            await carregarAvisosGlobaisDaNuvem();
+            alert('Aviso global publicado! Aparecerá no sininho de todos os usuários em tempo real.');
         } catch (erro) {
             alert('Erro ao publicar aviso: ' + erro.message);
         }
