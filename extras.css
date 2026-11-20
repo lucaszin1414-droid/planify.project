@@ -1,0 +1,231 @@
+/* =====================================================
+   PlaniFy - extras.css (carregue DEPOIS do style.css)
+   ===================================================== */
+
+/* ---------- Layout com mais abas ---------- */
+.topo-logado { flex-wrap: wrap; gap: 10px; }
+.abas-navegacao { flex-wrap: wrap; }
+
+/* ---------- Hora atual na grade ---------- */
+.tabela-agenda tr.linha-hora-atual td { box-shadow: inset 0 2px 0 rgba(46, 204, 113, 0.55), inset 0 -2px 0 rgba(46, 204, 113, 0.55); }
+.tabela-agenda tr.linha-hora-atual td.coluna-horario { background: #2ecc71; color: #122418; }
+
+/* ---------- Botões de ação da agenda ---------- */
+.agenda-acoes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+.btn-agenda-acao {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #ffffff;
+    background: transparent;
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-agenda-acao:hover { background: rgba(255, 255, 255, 0.15); }
+
+.seletor-categoria {
+    background: #122418;
+    color: #ffffff;
+    border: 1px solid #2a4d34;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-principal {
+    width: 100%;
+    padding: 12px;
+    background-color: #ffffff;
+    color: #1b3323;
+    border: none;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 5px;
+    transition: opacity 0.2s;
+}
+.btn-principal:hover { opacity: 0.9; }
+
+#aba-metas h2 { color: #ffffff; text-align: center; margin-bottom: 20px; }
+
+/* ---------- Barra de progresso (orçamento, gráfico e metas) ---------- */
+.barra-progresso { width: 100%; height: 12px; background: rgba(255, 255, 255, 0.12); border-radius: 999px; overflow: hidden; }
+.barra-progresso > div, #orcamento-barra { height: 100%; width: 0; border-radius: 999px; background: #2ecc71; transition: width 0.5s ease, background 0.3s ease; }
+
+.orcamento-bloco, .grafico-bloco {
+    background-color: #1b3323;
+    border: 1px solid #2a4d34;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 18px;
+}
+.orcamento-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.orcamento-topo strong, .grafico-bloco > strong { color: #ffffff; }
+#form-orcamento { display: flex; gap: 8px; flex-wrap: wrap; }
+#form-orcamento input { padding: 8px; width: 160px; background: rgba(255, 255, 255, 0.08); border: 1px solid #2a4d34; border-radius: 4px; color: #ffffff; }
+#form-orcamento button { padding: 8px 12px; background: #ffffff; color: #1b3323; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px; }
+#orcamento-texto { margin-top: 10px; font-size: 13px; color: #cfe3d7; line-height: 1.5; }
+
+.grafico-bloco > strong { display: block; margin-bottom: 10px; }
+.grafico-linha { display: grid; grid-template-columns: 140px 1fr 120px; gap: 10px; align-items: center; margin: 9px 0; font-size: 13px; color: #cfe3d7; }
+.grafico-valor { text-align: right; color: #ffffff; font-weight: bold; }
+.vazio-extra { text-align: center; color: #a3c1ad; padding: 10px; font-size: 13px; }
+
+@media (max-width: 600px) {
+    .grafico-linha { grid-template-columns: 1fr 1fr; }
+    .grafico-linha .barra-progresso { grid-column: 1 / -1; order: 3; }
+    .grafico-valor { grid-column: 2; grid-row: 1; }
+}
+
+/* ---------- Metas ---------- */
+.meta-card { background-color: #1b3323; border: 1px solid #2a4d34; border-left: 4px solid #8fc7a8; border-radius: 8px; padding: 14px; }
+.meta-card.meta-atingida { border-left-color: #2ecc71; }
+.meta-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.meta-topo h4 { color: #ffffff; margin: 0; }
+.meta-valores { margin-top: 8px; font-size: 14px; font-weight: bold; color: #ffffff; }
+.meta-info { margin-top: 4px; font-size: 12px; color: #a3c1ad; line-height: 1.5; }
+.meta-acoes { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.meta-acoes input { flex: 1; min-width: 100px; padding: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid #2a4d34; border-radius: 4px; color: #ffffff; }
+.meta-acoes button { padding: 8px 10px; background: #ffffff; color: #1b3323; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+
+/* ---------- Dica do dia ---------- */
+.dica-card {
+    max-width: 520px;
+    margin: 22px auto 0;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid #2a4d34;
+    border-left: 4px solid #f1c40f;
+    border-radius: 10px;
+    padding: 14px 16px;
+}
+.dica-cabecalho { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; }
+.dica-cabecalho strong { font-size: 14px; color: #ffffff; }
+.dica-cabecalho button { background: none; border: 1px solid #a3c1ad; color: #a3c1ad; border-radius: 4px; padding: 3px 8px; font-size: 12px; cursor: pointer; }
+.dica-cabecalho button:hover { color: #ffffff; border-color: #ffffff; }
+#dica-texto { font-size: 14px; line-height: 1.6; color: #cfe3d7; }
+
+/* ---------- Atividade repetida ---------- */
+.rep-dias { display: flex; flex-wrap: wrap; gap: 8px; }
+.rep-dias label { display: flex; align-items: center; gap: 4px; font-size: 13px; background: rgba(255, 255, 255, 0.08); padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+.rep-dias input { padding: 0; margin: 0; }
+.rep-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #cfe3d7; }
+.rep-label input[type="number"] { width: 70px; }
+
+/* ---------- Configurações com abas ---------- */
+.cfg-abas { display: flex; gap: 6px; margin: 12px 0 4px; flex-wrap: wrap; }
+.modal-conteudo .cfg-aba { flex: 1; min-width: 100px; padding: 8px 6px; background: transparent; color: #cfe3d7; border: 1px solid #2a4d34; font-size: 13px; }
+.modal-conteudo .cfg-aba.ativa { background: #ffffff; color: #1b3323; border-color: #ffffff; }
+.cfg-painel { display: none; }
+.cfg-painel.ativo { display: block; }
+.tema-opcoes { display: flex; gap: 10px; margin-top: 10px; }
+.modal-conteudo .tema-opcoes button { flex: 1; background: transparent; color: #ffffff; border: 2px solid #2a4d34; padding: 14px 6px; font-size: 14px; }
+.modal-conteudo .tema-opcoes button.ativo { border-color: #2ecc71; background: rgba(46, 204, 113, 0.15); }
+
+/* ---------- Admin: lista de avisos ---------- */
+.admin-lista-avisos { max-height: 260px; overflow-y: auto; }
+.admin-aviso-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 10px; background: #1b3323; border: 1px solid #2a4d34; border-radius: 6px; margin-bottom: 8px; }
+.admin-aviso-texto { display: flex; flex-direction: column; gap: 3px; font-size: 13px; min-width: 0; }
+.admin-aviso-texto strong { color: #ffffff; }
+.admin-aviso-texto span { color: #cfe3d7; word-break: break-word; }
+.admin-aviso-texto small { color: #a3c1ad; }
+.admin-aviso-item button { padding: 4px 10px; background: #e74c3c; color: #ffffff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; flex-shrink: 0; }
+
+/* =====================================================
+   TEMA CLARO (vale só para a área logada e os modais dela)
+   ===================================================== */
+html[data-tema="claro"] #tela-logado { background: #eef5f0; color: #12261b; }
+
+html[data-tema="claro"] #tela-logado :is(h1, h2, h3, h4, .semana-titulo, .calendario-dia, .btn-aba, .meta-topo h4, .meta-valores, .dica-cabecalho strong, .orcamento-topo strong, .grafico-bloco > strong, .grafico-valor, .admin-aviso-texto strong, .notif-cabecalho h4, .item-notificacao strong, .info-lembrete h4, .calendario-cabecalho h3) { color: #12261b; }
+
+html[data-tema="claro"] #tela-logado :is(.subtitulo-logado, .semana-sub, .data-cabecalho, .card-metrica span, .campo-grupo label, .info-lembrete p, .notif-vazia, .atividade-info-financeiro, .calendario-legenda, .calendario-dias-semana span, .nota-status, .previa-cabecalho, .item-notificacao span, .meta-info, .vazio-extra, #orcamento-texto, #dica-texto, .grafico-linha, .admin-aviso-texto span, .admin-aviso-texto small, .rep-label) { color: #4f6b5a; }
+
+html[data-tema="claro"] #tela-logado :is(.resumo-semanal-card, .card-lembrete-form, .card-lembretes-lista, .painel-calendario, .painel-previa-nota, .alternador-visao, .seletor-tipo-transacao) { background: #ffffff; border-color: #c8dccf; color: #12261b; box-shadow: 0 2px 8px rgba(18, 38, 27, 0.08); }
+
+html[data-tema="claro"] #tela-logado :is(.card-metrica, .orcamento-bloco, .grafico-bloco, .meta-card, .card-item-lembrete, .admin-aviso-item) { background: #f3f8f5; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .meta-card { border-left-color: #1b382b; }
+html[data-tema="claro"] #tela-logado .meta-card.meta-atingida { border-left-color: #2ecc71; }
+html[data-tema="claro"] #tela-logado .card-item-lembrete { border-left-color: #1b382b; }
+html[data-tema="claro"] #tela-logado .card-item-lembrete.disparado { border-left-color: #e74c3c; background: rgba(231, 76, 60, 0.08); }
+html[data-tema="claro"] #tela-logado .card-item-lembrete.pago { border-left-color: #2ecc71; }
+html[data-tema="claro"] #tela-logado .dica-card { background: #ffffff; border-color: #c8dccf; border-left-color: #f1c40f; }
+html[data-tema="claro"] #tela-logado .barra-progresso { background: rgba(18, 38, 27, 0.12); }
+
+/* tabelas */
+html[data-tema="claro"] #tela-logado .tabela-agenda { background: #ffffff; color: #12261b; }
+html[data-tema="claro"] #tela-logado .tabela-agenda :is(th, td) { border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .tabela-agenda th { background: #dcebe1; color: #12261b; }
+html[data-tema="claro"] #tela-logado .coluna-horario { background: #dcebe1; color: #12261b; }
+html[data-tema="claro"] #tela-logado .celula-agenda { background: rgba(27, 56, 43, 0.03); }
+html[data-tema="claro"] #tela-logado .celula-agenda:focus { background: rgba(27, 56, 43, 0.1); border-color: #1b382b; }
+html[data-tema="claro"] #tela-logado .tabela-agenda td.coluna-hoje, html[data-tema="claro"] #tela-logado .celula-agenda.coluna-hoje:not(:focus) { background: rgba(46, 204, 113, 0.13); }
+html[data-tema="claro"] #tela-logado .tabela-agenda th.coluna-hoje-cabecalho { box-shadow: inset 0 -3px 0 #1b382b; }
+html[data-tema="claro"] #tela-logado .tabela-agenda tr.linha-hora-atual td.coluna-horario { background: #2ecc71; color: #122418; }
+html[data-tema="claro"] #tela-logado .input-valor-financeiro { background: #ffffff; color: #12261b; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .item-transacao-detalhe { border-bottom-color: #dcebe1; }
+html[data-tema="claro"] #tela-logado .balanco-geral h3 { color: #12261b !important; }
+html[data-tema="claro"] #tela-logado .total-entradas h3 { color: #1e8449 !important; }
+html[data-tema="claro"] #tela-logado .total-saidas h3 { color: #c0392b !important; }
+
+/* botões */
+html[data-tema="claro"] #tela-logado :is(.btn-hamburguer, .btn-sininho) { border: 1px solid #c8dccf; }
+html[data-tema="claro"] #tela-logado .btn-aba:hover { background: rgba(27, 56, 43, 0.08); color: #12261b; }
+html[data-tema="claro"] #tela-logado .btn-aba.ativa { background: #1b382b; color: #ffffff; }
+html[data-tema="claro"] #tela-logado :is(.btn-tipo-transacao, .btn-visao, .btn-modo-agenda) { color: #12261b; }
+html[data-tema="claro"] #tela-logado :is(.btn-visao.ativa, .btn-modo-agenda.ativa) { background: #1b382b; color: #ffffff; }
+html[data-tema="claro"] #tela-logado .btn-tipo-transacao.ativa.btn-entrada { background: #2ecc71; color: #122418; }
+html[data-tema="claro"] #tela-logado .btn-tipo-transacao.ativa.btn-saida { background: #e74c3c; color: #ffffff; }
+html[data-tema="claro"] #tela-logado .btn-nav-semana { background: #ffffff; border-color: #c8dccf; color: #12261b; }
+html[data-tema="claro"] #tela-logado .btn-nav-semana:hover { background: #dcebe1; }
+html[data-tema="claro"] #tela-logado :is(.btn-hoje, .btn-agenda-acao, .btn-nota-secundario) { border-color: #1b382b; color: #1b382b; }
+html[data-tema="claro"] #tela-logado :is(.btn-hoje:hover, .btn-agenda-acao:hover, .btn-nota-secundario:hover) { background: #1b382b; color: #ffffff; }
+html[data-tema="claro"] #tela-logado :is(.btn-nota-primario, #btn-salvar-lembrete, .btn-principal, #form-orcamento button, .meta-acoes button) { background: #1b382b; color: #ffffff; border-color: #1b382b; }
+html[data-tema="claro"] #tela-logado .btn-notificacao { background: #ffffff; color: #12261b; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .seletor-categoria { background: #ffffff; color: #12261b; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .dica-cabecalho button { color: #4f6b5a; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .calendario-dia.hoje span { background: #1b382b; color: #ffffff; }
+html[data-tema="claro"] #tela-logado .calendario-semana:hover { background: rgba(27, 56, 43, 0.07); }
+html[data-tema="claro"] #tela-logado .calendario-semana.selecionada { background: rgba(27, 56, 43, 0.1); border-color: #1b382b; }
+
+/* campos */
+html[data-tema="claro"] #tela-logado :is(.campo-grupo input, #form-orcamento input, .meta-acoes input) { background: #ffffff; color: #12261b; border-color: #c8dccf; }
+
+/* menus e notificações */
+html[data-tema="claro"] #tela-logado .dropdown-conteudo { background: #ffffff; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .dropdown-conteudo button { color: #12261b; }
+html[data-tema="claro"] #tela-logado .dropdown-conteudo button:hover { background: rgba(27, 56, 43, 0.08); }
+html[data-tema="claro"] #tela-logado .dropdown-conteudo .btn-sair { color: #c0392b; }
+html[data-tema="claro"] #tela-logado .notif-cabecalho { background: #eef5f0; border-bottom-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .notif-cabecalho button { color: #4f6b5a; }
+html[data-tema="claro"] #tela-logado .item-notificacao { background: rgba(27, 56, 43, 0.05); border-left-color: #1b382b; }
+html[data-tema="claro"] #tela-logado .item-notificacao.alerta-pagamento { background: rgba(231, 76, 60, 0.1); border-left-color: #e74c3c; }
+html[data-tema="claro"] #tela-logado .menu-formatos { background: #ffffff; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .menu-formatos button { color: #12261b; }
+html[data-tema="claro"] #tela-logado .menu-formatos button:hover { background: rgba(27, 56, 43, 0.08); }
+html[data-tema="claro"] #tela-logado .menu-formatos small { color: #4f6b5a; }
+
+/* painel admin (tem estilos inline, por isso o !important) */
+html[data-tema="claro"] #aba-admin :is(input, textarea) { background: #ffffff !important; color: #12261b !important; border-color: #c8dccf !important; }
+html[data-tema="claro"] #btn-admin-backup { background: #1b382b !important; color: #ffffff !important; }
+
+/* janelas (configurações e atividade repetida) */
+html[data-tema="claro"] :is(#modal-config, #modal-repetir) .modal-conteudo { background: #ffffff; color: #12261b; box-shadow: 0 4px 16px rgba(18, 38, 27, 0.25); }
+html[data-tema="claro"] :is(#modal-config, #modal-repetir) :is(.fechar, h2, h3) { color: #12261b; }
+html[data-tema="claro"] :is(#modal-config, #modal-repetir) :is(.cfg-email, .cfg-ajuda, .rep-label) { color: #4f6b5a; }
+html[data-tema="claro"] :is(#modal-config, #modal-repetir) input:not([type="checkbox"]) { border: 1px solid #c8dccf; background: #ffffff; color: #12261b; }
+html[data-tema="claro"] :is(#modal-config, #modal-repetir) .cfg-secao { border-top-color: #c8dccf; }
+html[data-tema="claro"] #modal-config .cfg-aba { color: #12261b; border-color: #c8dccf; }
+html[data-tema="claro"] #modal-config .cfg-aba.ativa { background: #1b382b; color: #ffffff; border-color: #1b382b; }
+html[data-tema="claro"] #modal-config .tema-opcoes button { color: #12261b; border-color: #c8dccf; }
+html[data-tema="claro"] #modal-config .tema-opcoes button.ativo { border-color: #1b382b; background: rgba(27, 56, 43, 0.1); }
+html[data-tema="claro"] :is(#modal-config, #modal-repetir) form button[type="submit"]:not(.btn-perigo) { background: #1b382b; color: #ffffff; }
+html[data-tema="claro"] #modal-repetir .rep-dias label { background: #eef5f0; }
+html[data-tema="claro"] #modal-repetir .seletor-categoria { background: #ffffff; color: #12261b; border-color: #c8dccf; }
+
+/* aviso na tela (toast): mantém o visual escuro nos dois temas */
+.toast-planify { max-width: 320px; }
