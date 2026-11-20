@@ -545,30 +545,29 @@
 
     <!-- Inicialização do Firebase -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { 
-            getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy 
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import {
+        getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import {
+        getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+        signOut, onAuthStateChanged, updateProfile
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyA4SJD60jBSCbMdLrj5Q4Ih2y5RkEW0k0k",
-            authDomain: "projeto-planify.firebaseapp.com",
-            projectId: "projeto-planify",
-            storageBucket: "projeto-planify.firebasestorage.app",
-            messagingSenderId: "1021430412947",
-            appId: "1:1021430412947:web:bc2cfdc2f0198b757bff66",
-            measurementId: "G-77PR0VLNEW"
-        };
+    const firebaseConfig = { /* ...a sua config atual... */ };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-        window.firebaseDB = {
-            db, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy
-        };
+    window.firebaseDB = {
+        db, auth, collection, doc, setDoc, getDoc, getDocs, deleteDoc,
+        createUserWithEmailAndPassword, signInWithEmailAndPassword,
+        signOut, onAuthStateChanged, updateProfile
+    };
 
-        window.dispatchEvent(new Event('firebasePronto'));
-    </script>
+    window.dispatchEvent(new Event('firebasePronto'));
+</script>
 
     <script src="nota-pdf.js"></script>
     <script src="script.js"></script>
