@@ -8,6 +8,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="extras.css">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1b382b">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="PlaniFy">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <style>
         /* Esqueci minha senha / Configurações / avisos na tela */
         .modal-conteudo .link-esqueci { background: none; color: #a3c1ad; font-weight: normal; font-size: 13px; text-decoration: underline; padding: 4px; }
@@ -243,6 +251,7 @@
                 <button type="button" class="btn-aba" data-aba="aba-organizacao">Organização Semanal</button>
                 <button type="button" class="btn-aba" data-aba="aba-financeiro">Financeiro</button>
                 <button type="button" class="btn-aba" data-aba="aba-lembretes">Lembretes</button>
+                <button type="button" class="btn-aba" data-aba="aba-metas">Metas</button>
                 <button type="button" class="btn-aba" data-aba="aba-admin" id="aba-btn-admin" style="display: none;">Painel Admin</button>
             </nav>
 
@@ -286,6 +295,13 @@
                     <img src="capivara.jpeg" alt="Capivara" class="imagem-capivara-boas-vindas">
                     <h1 id="boas-vindas-titulo">Bem-vindo(a)!</h1>
                     <p class="subtitulo-logado">Você está na área principal do sistema.</p>
+                    <div class="dica-card">
+                        <div class="dica-cabecalho">
+                            <strong>💡 Dica financeira do dia</strong>
+                            <button type="button" id="btn-outra-dica">Outra dica</button>
+                        </div>
+                        <p id="dica-texto"></p>
+                    </div>
                 </div>
             </section>
 
@@ -306,6 +322,10 @@
                         </div>
                         <button type="button" class="btn-nav-semana" data-nav="proxima" aria-label="Próxima semana" title="Próxima semana">&#8250;</button>
                         <button type="button" class="btn-hoje" data-nav="hoje">Hoje</button>
+                    </div>
+                    <div class="agenda-acoes">
+                        <button type="button" id="btn-copiar-semana" class="btn-agenda-acao">📋 Copiar semana anterior</button>
+                        <button type="button" id="btn-repetir-atividade" class="btn-agenda-acao">🔁 Atividade repetida</button>
                     </div>
                 </div>
 
@@ -356,6 +376,7 @@
                             <button type="button" class="btn-tipo-transacao btn-entrada ativa" data-tipo="entrada">Entrada</button>
                             <button type="button" class="btn-tipo-transacao btn-saida" data-tipo="saida">Saída</button>
                         </div>
+                        <select id="categoria-transacao" class="seletor-categoria" aria-label="Categoria do lançamento" title="Categoria dos próximos lançamentos"></select>
                         <div class="alternador-visao">
                             <button type="button" class="btn-visao ativa" data-visao="grade">Visão Diária/Grade</button>
                             <button type="button" class="btn-visao" data-visao="resumo">Resumo Semanal</button>
@@ -367,8 +388,7 @@
                                     <button type="button" id="btn-baixar-nota" class="btn-nota-primario" aria-haspopup="true" aria-expanded="false">Baixar nota &#9662;</button>
                                     <div id="menu-formatos-nota" class="menu-formatos oculto" role="menu">
                                         <button type="button" role="menuitem" data-formato="pdf">PDF (.pdf)<small>Documento para ler e imprimir</small></button>
-                                        <button type="button" role="menuitem" data-formato="xml-nfe">XML NF-e (.xml)<small>Estrutura da NF-e 4.00 · rascunho sem valor fiscal</small></button>
-                                        <button type="button" role="menuitem" data-formato="xml-planify">XML PlaniFy (.xml)<small>Todos os dados da semana</small></button>
+                                        <button type="button" role="menuitem" data-formato="xlsx">Excel (.xlsx)<small>Planilha com movimentações, resumo e categorias</small></button>
                                     </div>
                                 </div>
                             </div>
@@ -427,6 +447,21 @@
                                 <h3 id="resumo-balanco-geral">R$ 0,00</h3>
                             </div>
                         </div>
+                        <div class="orcamento-bloco">
+                            <div class="orcamento-topo">
+                                <strong>🎯 Orçamento da semana</strong>
+                                <form id="form-orcamento">
+                                    <input type="number" id="orcamento-limite" step="0.01" min="0" placeholder="Limite de gastos (R$)">
+                                    <button type="submit">Salvar limite</button>
+                                </form>
+                            </div>
+                            <div class="barra-progresso"><div id="orcamento-barra"></div></div>
+                            <p id="orcamento-texto"></p>
+                        </div>
+                        <div class="grafico-bloco">
+                            <strong>📊 Gastos por categoria</strong>
+                            <div id="grafico-categorias"></div>
+                        </div>
                         <div id="detalhes-lista-financeira" class="detalhes-lista"></div>
                     </div>
                 </div>
@@ -473,6 +508,37 @@
                 </div>
             </section>
 
+            <!-- ABA: METAS DE ECONOMIA -->
+            <section id="aba-metas" class="conteudo-aba">
+                <h2>Metas de Economia</h2>
+                <div class="lembretes-container">
+                    <div class="card-lembrete-form">
+                        <h3>Nova meta</h3>
+                        <form id="form-nova-meta">
+                            <div class="campo-grupo">
+                                <label for="meta-nome">O que você quer conquistar?</label>
+                                <input type="text" id="meta-nome" placeholder="Ex: Viagem, celular novo" maxlength="40" required>
+                            </div>
+                            <div class="linha-dupla">
+                                <div class="campo-grupo">
+                                    <label for="meta-valor">Valor da meta (R$):</label>
+                                    <input type="number" id="meta-valor" step="0.01" min="1" placeholder="0,00" required>
+                                </div>
+                                <div class="campo-grupo">
+                                    <label for="meta-prazo">Prazo (opcional):</label>
+                                    <input type="date" id="meta-prazo">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-principal">Criar meta</button>
+                        </form>
+                    </div>
+                    <div class="card-lembretes-lista">
+                        <div class="lembretes-lista-cabecalho"><h3>Minhas metas</h3></div>
+                        <div id="lista-metas" class="lista-cards-lembretes"></div>
+                    </div>
+                </div>
+            </section>
+
             <!-- ABA 5: PAINEL ADMINISTRATIVO (liberado só para contas em admins/{uid}) -->
             <section id="aba-admin" class="conteudo-aba">
                 <h2>Painel Administrativo do PlaniFy</h2>
@@ -503,6 +569,15 @@
                         <textarea id="admin-aviso-texto" placeholder="Mensagem detalhada que aparecerá no sininho de todos..." required style="padding: 10px; background: rgba(255,255,255,0.08); border: 1px solid #2a4d34; border-radius: 4px; color: #fff; height: 80px; resize: none;"></textarea>
                         <button type="submit" style="padding: 10px; background: #2ecc71; color: #122418; border: none; font-weight: bold; border-radius: 4px; cursor: pointer;">Disparar Notificação Global</button>
                     </form>
+                </div>
+
+                <!-- AVISOS PUBLICADOS (ver e apagar) -->
+                <div class="resumo-semanal-card" style="margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; flex-wrap: wrap;">
+                        <h3 style="margin: 0;">📋 Avisos publicados</h3>
+                        <button type="button" id="btn-admin-apagar-todos-avisos" class="btn-agenda-acao">Apagar todos</button>
+                    </div>
+                    <div id="admin-lista-avisos" class="admin-lista-avisos"></div>
                 </div>
 
                 <!-- FERRAMENTA 2: GERENCIAMENTO DE USUÁRIOS CADASTRADOS -->
@@ -565,37 +640,89 @@
             <h2>Configurações</h2>
             <p class="cfg-email" id="cfg-email"></p>
 
-            <div class="cfg-secao">
-                <h3>Nome de usuário</h3>
-                <form id="form-cfg-nome">
-                    <input type="text" id="cfg-nome" placeholder="Seu nome" maxlength="40" required>
-                    <button type="submit">Salvar nome</button>
-                </form>
+            <div class="cfg-abas" role="tablist">
+                <button type="button" class="cfg-aba ativa" data-cfg-aba="cfg-painel-aparencia">🎨 Aparência</button>
+                <button type="button" class="cfg-aba" data-cfg-aba="cfg-painel-app">📲 Instalar app</button>
+                <button type="button" class="cfg-aba" data-cfg-aba="cfg-painel-conta">👤 Conta</button>
             </div>
 
-            <div class="cfg-secao">
-                <h3>Alterar senha</h3>
-                <form id="form-cfg-senha">
-                    <input type="password" id="cfg-senha-atual" placeholder="Senha atual" required>
-                    <input type="password" id="cfg-senha-nova" placeholder="Nova senha (mínimo 6 caracteres)" minlength="6" required>
-                    <button type="submit">Alterar senha</button>
-                </form>
+            <div id="cfg-painel-aparencia" class="cfg-painel ativo">
+                <div class="cfg-secao">
+                    <h3>Tema</h3>
+                    <p class="cfg-ajuda">Vale para a área logada do site. Fica salvo neste aparelho.</p>
+                    <div class="tema-opcoes">
+                        <button type="button" data-opcao-tema="escuro">🌙 Escuro</button>
+                        <button type="button" data-opcao-tema="claro">☀️ Claro</button>
+                    </div>
+                </div>
             </div>
 
-            <div class="cfg-secao perigo">
-                <h3>Excluir minha conta</h3>
-                <p class="cfg-ajuda">Apaga a conta, a agenda, o financeiro e os lembretes. Não dá para desfazer.</p>
-                <form id="form-cfg-excluir">
-                    <input type="password" id="cfg-senha-excluir" placeholder="Digite sua senha para confirmar" required>
-                    <button type="submit" class="btn-perigo">Excluir minha conta</button>
-                </form>
+            <div id="cfg-painel-app" class="cfg-painel">
+                <div class="cfg-secao">
+                    <h3>Instalar o PlaniFy como app</h3>
+                    <p class="cfg-ajuda" id="instalar-texto"></p>
+                    <button type="button" id="btn-instalar-app">📲 Instalar o PlaniFy</button>
+                </div>
             </div>
+
+            <div id="cfg-painel-conta" class="cfg-painel">
+                <div class="cfg-secao">
+                    <h3>Nome de usuário</h3>
+                    <form id="form-cfg-nome">
+                        <input type="text" id="cfg-nome" placeholder="Seu nome" maxlength="40" required>
+                        <button type="submit">Salvar nome</button>
+                    </form>
+                </div>
+
+                <div class="cfg-secao">
+                    <h3>Alterar senha</h3>
+                    <form id="form-cfg-senha">
+                        <input type="password" id="cfg-senha-atual" placeholder="Senha atual" required>
+                        <input type="password" id="cfg-senha-nova" placeholder="Nova senha (mínimo 6 caracteres)" minlength="6" required>
+                        <button type="submit">Alterar senha</button>
+                    </form>
+                </div>
+
+                <div class="cfg-secao perigo">
+                    <h3>Excluir minha conta</h3>
+                    <p class="cfg-ajuda">Apaga a conta, a agenda, o financeiro e os lembretes. Não dá para desfazer.</p>
+                    <form id="form-cfg-excluir">
+                        <input type="password" id="cfg-senha-excluir" placeholder="Digite sua senha para confirmar" required>
+                        <button type="submit" class="btn-perigo">Excluir minha conta</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ATIVIDADE REPETIDA -->
+    <div id="modal-repetir" class="modal">
+        <div class="modal-conteudo modal-config-conteudo">
+            <span class="fechar" id="fechar-repetir">&times;</span>
+            <h2>Atividade repetida</h2>
+            <p class="cfg-ajuda">Preenche o horário escolhido nas próximas semanas, a partir da semana que você está vendo. Horários que já têm texto não são alterados.</p>
+            <form id="form-repetir">
+                <input type="text" id="rep-texto" placeholder="Atividade (ex: Aula de inglês)" maxlength="60" required>
+                <div class="rep-dias" id="rep-dias">
+                    <label><input type="checkbox" value="0"> Seg</label>
+                    <label><input type="checkbox" value="1"> Ter</label>
+                    <label><input type="checkbox" value="2"> Qua</label>
+                    <label><input type="checkbox" value="3"> Qui</label>
+                    <label><input type="checkbox" value="4"> Sex</label>
+                    <label><input type="checkbox" value="5"> Sáb</label>
+                    <label><input type="checkbox" value="6"> Dom</label>
+                </div>
+                <label class="rep-label">Horário <select id="rep-hora" class="seletor-categoria"></select></label>
+                <label class="rep-label">Repetir por <input type="number" id="rep-semanas" min="1" max="52" value="8"> semanas</label>
+                <button type="submit">Repetir</button>
+            </form>
         </div>
     </div>
 
     <!-- Inicialização do Firebase (Firestore + Authentication) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check.js";
         import {
             getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -616,6 +743,17 @@
         };
 
         const app = initializeApp(firebaseConfig);
+
+        // App Check: só ativa quando você colar a chave reCAPTCHA v3 (veja as instruções).
+        // Deixe vazio enquanto não tiver criado a chave: o site funciona normalmente.
+        const APP_CHECK_SITE_KEY = "";
+        if (APP_CHECK_SITE_KEY) {
+            initializeAppCheck(app, {
+                provider: new ReCaptchaV3Provider(APP_CHECK_SITE_KEY),
+                isTokenAutoRefreshEnabled: true
+            });
+        }
+
         const db = getFirestore(app);
         const auth = getAuth(app);
 
@@ -629,8 +767,11 @@
         window.dispatchEvent(new Event('firebasePronto'));
     </script>
 
+    <!-- Gerador de Excel (SheetJS 0.18.5) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="nota-pdf.js"></script>
     <script src="script.js"></script>
+    <script src="extras.js"></script>
     <script src="landing.js"></script>
 </body>
 </html>
