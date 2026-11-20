@@ -66,8 +66,8 @@
                             <span>de segunda a domingo, em uma única visão</span>
                         </div>
                         <div class="destaque reveal" style="--atraso: 0.2s">
-                            <strong>16 horários</strong>
-                            <span>das 07:00 às 22:00 para planejar o seu dia</span>
+                            <strong>24 horários</strong>
+                            <span>das 00:00 às 23:00 para planejar o seu dia</span>
                         </div>
                         <div class="destaque reveal" style="--atraso: 0.3s">
                             <strong>1 painel</strong>
@@ -116,7 +116,7 @@
                     <article class="card-func reveal">
                         <div class="icone">🗓️</div>
                         <h3>Organização Semanal</h3>
-                        <p>Uma grade de segunda a domingo, das 07:00 às 22:00, onde você escreve as suas atividades direto nas células.</p>
+                        <p>Uma grade de segunda a domingo, com as 24 horas do dia, onde você escreve as suas atividades direto nas células.</p>
                     </article>
                     <article class="card-func reveal" style="--atraso: 0.1s">
                         <div class="icone">💰</div>
@@ -459,10 +459,10 @@
                 </div>
             </section>
 
-            <!-- ABA 5: PAINEL ADMINISTRATIVO (Funcional e Protegido) -->
+            <!-- ABA 5: PAINEL ADMINISTRATIVO (liberado só para contas em admins/{uid}) -->
             <section id="aba-admin" class="conteudo-aba">
                 <h2>Painel Administrativo do PlaniFy</h2>
-                
+
                 <div class="resumo-semanal-card" style="margin-bottom: 25px;">
                     <h3>Métricas Globais do Sistema</h3>
                     <div class="metricas-resumo">
@@ -502,7 +502,7 @@
                             <thead>
                                 <tr>
                                     <th>Nome de Usuário</th>
-                                    <th>E-mail (Chave)</th>
+                                    <th>E-mail</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
@@ -524,7 +524,7 @@
             <form id="form-cadastro">
                 <input type="text" id="cad-usuario" placeholder="Nome de Usuário" required>
                 <input type="email" id="cad-email" placeholder="E-mail" required>
-                <input type="password" id="cad-senha" placeholder="Senha" required>
+                <input type="password" id="cad-senha" placeholder="Senha (mínimo 6 caracteres)" minlength="6" required>
                 <button type="submit">Cadastrar</button>
             </form>
         </div>
@@ -543,39 +543,40 @@
         </div>
     </div>
 
-    <!-- Inicialização do Firebase -->
-   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import {
-        getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import {
-        getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-        signOut, onAuthStateChanged, updateProfile
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    <!-- Inicialização do Firebase (Firestore + Authentication) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import {
+            getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import {
+            getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+            signOut, onAuthStateChanged, updateProfile
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyA4SJD60jBSCbMdLrj5Q4Ih2y5RkEW0k0k",
-        authDomain: "projeto-planify.firebaseapp.com",
-        projectId: "projeto-planify",
-        storageBucket: "projeto-planify.firebasestorage.app",
-        messagingSenderId: "1021430412947",
-        appId: "1:1021430412947:web:bc2cfdc2f0198b757bff66",
-        measurementId: "G-77PR0VLNEW"
-    };
+        const firebaseConfig = {
+            apiKey: "AIzaSyA4SJD60jBSCbMdLrj5Q4Ih2y5RkEW0k0k",
+            authDomain: "projeto-planify.firebaseapp.com",
+            projectId: "projeto-planify",
+            storageBucket: "projeto-planify.firebasestorage.app",
+            messagingSenderId: "1021430412947",
+            appId: "1:1021430412947:web:bc2cfdc2f0198b757bff66",
+            measurementId: "G-77PR0VLNEW"
+        };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
-    window.firebaseDB = {
-        db, auth, collection, doc, setDoc, getDoc, getDocs, deleteDoc,
-        createUserWithEmailAndPassword, signInWithEmailAndPassword,
-        signOut, onAuthStateChanged, updateProfile
-    };
+        window.firebaseDB = {
+            db, auth, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot,
+            createUserWithEmailAndPassword, signInWithEmailAndPassword,
+            signOut, onAuthStateChanged, updateProfile
+        };
 
-    window.dispatchEvent(new Event('firebasePronto'));
-</script>
+        window.dispatchEvent(new Event('firebasePronto'));
+    </script>
+
     <script src="nota-pdf.js"></script>
     <script src="script.js"></script>
     <script src="landing.js"></script>
