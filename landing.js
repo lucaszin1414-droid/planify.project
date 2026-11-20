@@ -119,8 +119,8 @@ const diasDaSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado
 const diasAbreviados = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const nomesDosMeses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
-const HORA_INICIAL = 7;
-const TOTAL_HORAS = 16;
+const HORA_INICIAL = 0;
+const TOTAL_HORAS = 24;
 
 function adicionarDias(data, quantidade) {
     return new Date(data.getFullYear(), data.getMonth(), data.getDate() + quantidade);
