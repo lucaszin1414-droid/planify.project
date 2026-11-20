@@ -230,3 +230,128 @@ html[data-tema="claro"] #modal-repetir .seletor-categoria { background: #ffffff;
 
 /* aviso na tela (toast): mantém o visual escuro nos dois temas */
 .toast-planify { max-width: 320px; }
+
+/* =====================================================
+   CELULAR (telas de até 600px) - o PC não muda
+   ===================================================== */
+@media (max-width: 600px) {
+    html { -webkit-text-size-adjust: 100%; }
+
+    /* ---------- Cabeçalho da área logada ---------- */
+    .topo-logado { padding: 10px 12px; gap: 8px; }
+    .controles-topo-direito { order: 1; margin-left: auto; gap: 8px; }
+    .abas-navegacao {
+        order: 2; width: 100%; flex-wrap: nowrap; gap: 6px; padding-bottom: 4px;
+        overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .abas-navegacao::-webkit-scrollbar { display: none; }
+    .btn-aba { flex: 0 0 auto; white-space: nowrap; padding: 8px 12px; font-size: 14px; }
+    .btn-hamburguer, .btn-sininho { min-width: 42px; min-height: 40px; }
+    .dropdown-notif { width: min(280px, calc(100vw - 80px)); }
+
+    /* ---------- Conteúdo ---------- */
+    .conteudo-principal-logado { padding: 12px 8px; }
+    .conteudo-aba h2 { font-size: 1.2rem; }
+    .imagem-capivara-boas-vindas { width: 200px; height: 200px; max-width: 60vw; max-height: 60vw; }
+    #boas-vindas-titulo { font-size: 1.6rem; }
+    .subtitulo-logado { font-size: 1rem; }
+    .dica-card { margin-top: 16px; }
+
+    /* ---------- Controles (agenda e financeiro) ---------- */
+    .agenda-controles, .controles-financeiros { gap: 10px; width: 100%; }
+    .navegador-semana { width: 100%; gap: 8px; }
+    .semana-info { min-width: 0; flex: 1 1 140px; text-align: center; }
+    .semana-titulo { font-size: 14px; text-align: center; }
+    .btn-hoje { padding: 6px 10px; }
+    .alternador-visao, .seletor-tipo-transacao { width: 100%; }
+    .btn-modo-agenda, .btn-visao, .btn-tipo-transacao { flex: 1; padding: 10px 6px; font-size: 13px; }
+    .agenda-acoes { width: 100%; }
+    .btn-agenda-acao { flex: 1 1 140px; padding: 10px 8px; }
+    .acoes-nota { width: 100%; }
+    .acoes-nota-botoes { width: 100%; flex-wrap: wrap; }
+    .btn-nota-secundario { flex: 1 1 140px; padding: 10px 8px; }
+    .menu-download { flex: 1 1 140px; display: block; }
+    .btn-nota-primario { width: 100%; padding: 10px 8px; }
+    .menu-formatos { position: fixed; left: 12px; right: 12px; top: auto; bottom: 16px; min-width: 0; z-index: 40; }
+    .nota-status { text-align: center; }
+    #iframe-previa-nota { height: 420px; }
+    .painel-previa-nota { padding: 8px; }
+
+    /* ---------- Tabelas: rola de lado e a coluna de horário fica fixa ---------- */
+    .tabela-container { max-width: 100%; max-height: 70vh; border-radius: 6px; -webkit-overflow-scrolling: touch; }
+    .tabela-agenda { font-size: 12px; }
+    .tabela-agenda th, .tabela-agenda td { min-width: 108px; padding: 6px 4px; }
+    :is(#aba-organizacao, #visao-grade-financeira) .tabela-agenda th:first-child,
+    :is(#aba-organizacao, #visao-grade-financeira) .tabela-agenda td.coluna-horario,
+    #visao-grade-financeira .tabela-agenda tfoot td:first-child {
+        position: sticky; left: 0; min-width: 58px; width: 58px; box-shadow: inset -1px 0 0 #2a4d34; z-index: 1;
+    }
+    :is(#aba-organizacao, #visao-grade-financeira) .tabela-agenda th:first-child { z-index: 3; }
+    #visao-grade-financeira .tabela-agenda tfoot td:first-child { background: #1b3323; font-size: 11px; }
+    .atividade-info-financeiro { max-width: 92px; font-size: 10px; }
+    .input-valor-financeiro { padding: 4px; font-size: 16px; }
+
+    /* ---------- Resumo, orçamento e gráfico ---------- */
+    .resumo-semanal-card { padding: 14px 12px; }
+    .metricas-resumo { gap: 10px; }
+    .card-metrica { min-width: 100%; padding: 12px; }
+    .item-transacao-detalhe { flex-direction: column; align-items: flex-start; gap: 2px; }
+    .orcamento-bloco, .grafico-bloco { padding: 12px; }
+    .orcamento-topo { flex-direction: column; align-items: stretch; }
+    #form-orcamento { width: 100%; }
+    #form-orcamento input { flex: 1; width: auto; min-width: 0; font-size: 16px; }
+
+    /* ---------- Lembretes e metas ---------- */
+    .lembretes-container { gap: 14px; }
+    .card-lembrete-form, .card-lembretes-lista { padding: 14px 12px; }
+    .linha-dupla { flex-wrap: wrap; }
+    .linha-dupla .campo-grupo { flex: 1 1 130px; }
+    .campo-grupo input { font-size: 16px; }
+    .lembretes-lista-cabecalho { flex-direction: column; align-items: stretch; }
+    .btn-notificacao { width: 100%; padding: 10px; }
+    .card-item-lembrete { flex-direction: column; align-items: stretch; gap: 8px; }
+    .acoes-lembrete { justify-content: flex-end; }
+    .btn-acao-lembrete { font-size: 20px; padding: 8px; }
+    .meta-acoes input { min-width: 100%; font-size: 16px; }
+    .meta-acoes button { flex: 1; padding: 10px 8px; }
+    .painel-calendario { padding: 10px; }
+    .calendario-dia { padding: 6px 0; font-size: 13px; }
+
+    /* ---------- Janelas (login, cadastro, configurações) ---------- */
+    .modal { overflow-y: auto; }
+    .modal-conteudo { width: 92vw; max-width: 380px; margin: 6% auto; padding: 20px 16px; }
+    .modal-conteudo.modal-config-conteudo { width: 94vw; max-width: 420px; margin: 3% auto; max-height: 92vh; }
+    .modal-conteudo input, .modal-conteudo select { font-size: 16px; }
+    .modal-conteudo .cfg-aba { min-width: 0; padding: 8px 4px; font-size: 12px; }
+    .rep-dias label { padding: 8px 10px; }
+
+    /* ---------- Avisos na tela (toast) ---------- */
+    html body #area-toasts { left: 12px; right: 12px; top: 10px; max-width: none; }
+
+    /* ---------- Painel admin ---------- */
+    #aba-admin .resumo-semanal-card > div[style*="space-between"] { flex-wrap: wrap !important; gap: 8px !important; }
+    .admin-aviso-item { flex-direction: column; }
+    .admin-aviso-item button { align-self: flex-end; }
+
+    /* ---------- Página de apresentação (antes do login) ---------- */
+    .nav-landing { padding: 10px 4%; gap: 8px; }
+    .nav-marca { font-size: 1.1rem; }
+    .nav-acoes button { padding: 6px 10px; font-size: 13px; }
+    .hero { padding: 14px; }
+    .botoes-topo button { padding: 8px 14px; }
+    .conteudo-principal { padding-left: 4%; }
+    .titulo { letter-spacing: -1px; }
+    .secao { padding: 64px 5%; }
+    .secao-titulo { margin-bottom: 26px; }
+    .texto-grande { font-size: 1.15rem; }
+    .subtitulo-secao { font-size: 1.3rem; margin: 54px 0 22px; }
+    .destaque:hover, .card-func:hover, .card-aplicacao:hover, .card-membro:hover { transform: none; }
+    .passo { padding-top: 56px; }
+    .rodape-site { padding: 50px 6% 20px; }
+    .btn-voltar-topo { right: 14px; bottom: 14px; width: 42px; height: 42px; }
+
+    /* ---------- Tema claro no celular ---------- */
+    html[data-tema="claro"] #tela-logado #visao-grade-financeira .tabela-agenda tfoot td:first-child { background: #dcebe1; }
+    html[data-tema="claro"] #tela-logado :is(#aba-organizacao, #visao-grade-financeira) .tabela-agenda :is(th:first-child, td.coluna-horario),
+    html[data-tema="claro"] #tela-logado #visao-grade-financeira .tabela-agenda tfoot td:first-child { box-shadow: inset -1px 0 0 #c8dccf; }
+}
