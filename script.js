@@ -1,11 +1,6 @@
-
-
-
-
-
-
-
-
+// =====================================================
+// PlaniFy - script.js (Firebase Authentication + Firestore)
+// =====================================================
 
 // Referências das Telas
 const telaInicial = document.getElementById('tela-inicial');
@@ -37,14 +32,17 @@ const btnPainelAdmin = document.getElementById('btn-painel-admin');
 const btnSuporte = document.getElementById('btn-suporte');
 const abaBtnAdmin = document.getElementById('aba-btn-admin');
 
-// Códigos de acesso válidos do Administrador
-const CODIGOS_ADMIN_VALIDOS = ["PLANIFY-ADMIN-2026-SECURE", "PLANIFY-ADM-2026-SECURE"];
+// --- ESTADO DA SESSÃO (controlado pelo Firebase Authentication) ---
+let usuarioUid = '';
+let usuarioLogadoEmail = '';
+let usuarioLogadoNome = '';
+let usuarioEhAdmin = false;
+let cadastroEmAndamento = false;
 
-// --- PERSISTÊNCIA DE SESSÃO ---
-let usuarioLogadoEmail = localStorage.getItem('planify_sessao_ativa') || '';
-let usuarioLogadoNome = localStorage.getItem('planify_nome_ativo') || '';
+// O botão "Painel Admin" do menu só aparece para administradores
+if (btnPainelAdmin) btnPainelAdmin.style.display = 'none';
 
-// --- LÓGICA DO SININHO E CENTRAL DE NOTIFICAÇÕES (NUVEM + LOCAL) ---
+// --- LÓGICA DO SININHO E CENTRAL DE NOTIFICAÇÕES ---
 const btnSininho = document.getElementById('btn-sininho');
 const dropdownNotificacoes = document.getElementById('dropdown-notificacoes');
 const badgeNotificacao = document.getElementById('badge-notificacao');
@@ -64,6 +62,7 @@ if (btnSininho) {
 
 if (btnLimparNotifs) {
     btnLimparNotifs.addEventListener('click', () => {
+        marcarNotificacoesComoLidas();
         listaHistoricoNotifs = [];
         renderizarPainelNotificacoes();
     });
@@ -112,14 +111,15 @@ function renderizarPainelNotificacoes() {
         item.classList.add('item-notificacao', 'alerta-pagamento');
         item.innerHTML = `
             <strong>📢 ${escapeXML(notif.titulo)}</strong>
-            <span>${escapeXML(String(notif.mensagem || notif.valor || ''))} — ${notif.horario || ''}</span>
+            <span>${escapeXML(String(notif.mensagem || notif.valor || ''))} — ${escapeXML(notif.horario || '')}</span>
         `;
         listaNotificacoes.appendChild(item);
     });
 }
 
 function marcarNotificacoesComoLidas() {
-    const ids = listaHistoricoNotifs.map(n => String(n.id));
+    const lidasAntigas = JSON.parse(localStorage.getItem('planify_notifs_lidas') || '[]');
+    const ids = Array.from(new Set([...lidasAntigas, ...listaHistoricoNotifs.map(n => String(n.id))]));
     localStorage.setItem('planify_notifs_lidas', JSON.stringify(ids));
     if (badgeNotificacao) badgeNotificacao.classList.add('oculta');
 }
@@ -132,8 +132,13 @@ const diasDaSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado
 const diasAbreviados = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const nomesDosMeses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
+// 24 horas: de 00:00 até 23:00
 const HORA_INICIAL = 0;
 const TOTAL_HORAS = 24;
+
+function formatarHora(hIndex) {
+    return `${String(hIndex + HORA_INICIAL).padStart(2, '0')}:00`;
+}
 
 function adicionarDias(data, quantidade) {
     return new Date(data.getFullYear(), data.getMonth(), data.getDate() + quantidade);
@@ -166,26 +171,23 @@ function formatarDataCompleta(data) {
 let semanaSelecionada = inicioDaSemana(new Date());
 let mesExibido = mesDaSemana(semanaSelecionada);
 let modoAgenda = 'semanal';
-let diaAtualChave = chaveDia(new Date());
 
 function mesDaSemana(inicioSemana) {
     const quinta = adicionarDias(inicioSemana, 3);
     return new Date(quinta.getFullYear(), quinta.getMonth(), 1);
 }
 
-// --- DADOS NA NUVEM (FIRESTORE) ---
+// --- DADOS NA NUVEM (FIRESTORE) - um documento por usuário, identificado pelo UID ---
 let agendaPorSemana = {};
 let financeiroPorSemana = {};
 let listaLembretes = [];
 
 async function carregarDadosDoUsuarioDaNuvem() {
-    if (!window.firebaseDB || !usuarioLogadoEmail) return;
+    if (!window.firebaseDB || !usuarioUid) return;
     const { db, doc, getDoc } = window.firebaseDB;
 
     try {
-        const docRef = doc(db, "dados_usuarios", usuarioLogadoEmail);
-        const docSnap = await getDoc(docRef);
-
+        const docSnap = await getDoc(doc(db, "dados_usuarios", usuarioUid));
         if (docSnap.exists()) {
             const dados = docSnap.data();
             agendaPorSemana = dados.agenda || {};
@@ -203,23 +205,38 @@ async function carregarDadosDoUsuarioDaNuvem() {
     }
 }
 
+function contarRegistros() {
+    let total = 0;
+    Object.values(agendaPorSemana).forEach(sem => { total += Object.keys(sem).length; });
+    Object.values(financeiroPorSemana).forEach(sem => { total += Object.keys(sem).length; });
+    return total;
+}
+
+async function sincronizarAgora() {
+    if (!window.firebaseDB || !usuarioUid) return;
+    const { db, doc, setDoc } = window.firebaseDB;
+    try {
+        await setDoc(doc(db, "dados_usuarios", usuarioUid), {
+            agenda: agendaPorSemana,
+            financeiro: financeiroPorSemana,
+            lembretes: listaLembretes,
+            ultimaAtualizacao: new Date().toISOString()
+        });
+        // Perfil: guarda apenas CONTADORES (o admin nunca vê o conteúdo)
+        await setDoc(doc(db, "usuarios", usuarioUid), {
+            totalRegistros: contarRegistros(),
+            ultimoAcesso: Date.now()
+        }, { merge: true });
+    } catch (erro) {
+        console.error("Erro ao guardar na nuvem:", erro);
+    }
+}
+
 let timeoutSalvarNuvem = null;
 function sincronizarDadosComNuvem() {
-    if (!window.firebaseDB || !usuarioLogadoEmail) return;
+    if (!window.firebaseDB || !usuarioUid) return;
     clearTimeout(timeoutSalvarNuvem);
-    timeoutSalvarNuvem = setTimeout(async () => {
-        const { db, doc, setDoc } = window.firebaseDB;
-        try {
-            await setDoc(doc(db, "dados_usuarios", usuarioLogadoEmail), {
-                agenda: agendaPorSemana,
-                financeiro: financeiroPorSemana,
-                lembretes: listaLembretes,
-                ultimaAtualizacao: new Date().toISOString()
-            }, { merge: true });
-        } catch (erro) {
-            console.error("Erro ao guardar na nuvem:", erro);
-        }
-    }, 600);
+    timeoutSalvarNuvem = setTimeout(sincronizarAgora, 600);
 }
 
 function textoAgenda(chaveSemana, hIndex, diaIndex) {
@@ -257,79 +274,108 @@ window.addEventListener('click', (event) => {
     if (event.target === modalLogin) modalLogin.style.display = 'none';
 });
 
-// --- CADASTRO NO FIREBASE ---
+function traduzirErroAuth(erro) {
+    switch (erro && erro.code) {
+        case 'auth/email-already-in-use': return 'Este e-mail já está cadastrado.';
+        case 'auth/invalid-email': return 'E-mail inválido.';
+        case 'auth/weak-password': return 'Senha fraca: use pelo menos 6 caracteres.';
+        case 'auth/invalid-credential':
+        case 'auth/wrong-password':
+        case 'auth/user-not-found': return 'E-mail ou senha incorretos.';
+        case 'auth/too-many-requests': return 'Muitas tentativas. Aguarde alguns minutos e tente de novo.';
+        case 'auth/network-request-failed': return 'Sem conexão com a internet.';
+        case 'auth/operation-not-allowed': return 'Login por e-mail/senha não está ativado no Firebase.';
+        default: return (erro && erro.message) || 'Erro desconhecido.';
+    }
+}
+
+// --- CADASTRO (Firebase Authentication) ---
 if (formCadastro) {
     formCadastro.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (!window.firebaseDB) return alert("A aguardar ligação com a nuvem...");
+        if (!window.firebaseDB) return alert("Aguardando ligação com a nuvem...");
 
         const usuario = document.getElementById('cad-usuario').value.trim();
         const email = document.getElementById('cad-email').value.trim().toLowerCase();
         const senha = document.getElementById('cad-senha').value;
 
-        const { db, doc, getDoc, setDoc } = window.firebaseDB;
+        if (senha.length < 6) return alert('A senha precisa ter pelo menos 6 caracteres.');
+
+        const { auth, db, doc, setDoc, createUserWithEmailAndPassword, updateProfile } = window.firebaseDB;
+        cadastroEmAndamento = true;
         try {
-            const userRef = doc(db, "usuarios", email);
-            const userSnap = await getDoc(userRef);
-
-            if (userSnap.exists()) {
-                alert('Este e-mail já está registado!');
-                return;
-            }
-
-            await setDoc(userRef, {
+            const cred = await createUserWithEmailAndPassword(auth, email, senha);
+            await updateProfile(cred.user, { displayName: usuario });
+            // Perfil SEM senha: a senha fica só no Firebase Authentication (com hash)
+            await setDoc(doc(db, "usuarios", cred.user.uid), {
                 usuario,
                 email,
-                senha,
-                criadoEm: new Date().toISOString()
+                criadoEm: new Date().toISOString(),
+                ultimoAcesso: Date.now(),
+                totalRegistros: 0
             });
 
-            alert('Cadastro realizado na nuvem com sucesso! Agora podes fazer o login.');
             formCadastro.reset();
             modalCadastro.style.display = 'none';
+            cadastroEmAndamento = false;
+            await iniciarSessao(cred.user);
         } catch (erro) {
-            alert('Erro ao cadastrar: ' + erro.message);
+            cadastroEmAndamento = false;
+            alert('Erro ao cadastrar: ' + traduzirErroAuth(erro));
         }
     });
 }
 
-// --- LOGIN NO FIREBASE ---
+// --- LOGIN (Firebase Authentication) ---
 if (formLogin) {
     formLogin.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (!window.firebaseDB) return alert("A aguardar ligação com a nuvem...");
+        if (!window.firebaseDB) return alert("Aguardando ligação com a nuvem...");
 
         const email = document.getElementById('login-email').value.trim().toLowerCase();
         const senha = document.getElementById('login-senha').value;
+        const { auth, signInWithEmailAndPassword } = window.firebaseDB;
 
-        const { db, doc, getDoc } = window.firebaseDB;
         try {
-            const userRef = doc(db, "usuarios", email);
-            const userSnap = await getDoc(userRef);
-
-            if (!userSnap.exists()) {
-                alert('Utilizador não encontrado! Faz o cadastro primeiro.');
-                return;
-            }
-
-            const usuarioObj = userSnap.data();
-            if (usuarioObj.senha === senha) {
-                formLogin.reset();
-                modalLogin.style.display = 'none';
-
-                usuarioLogadoNome = usuarioObj.usuario;
-                usuarioLogadoEmail = email;
-                localStorage.setItem('planify_sessao_ativa', email);
-                localStorage.setItem('planify_nome_ativo', usuarioObj.usuario);
-
-                await ativarSessaoLogada();
-            } else {
-                alert('Senha incorreta! Tenta novamente.');
-            }
+            await signInWithEmailAndPassword(auth, email, senha);
+            formLogin.reset();
+            modalLogin.style.display = 'none';
+            // O restante acontece no onAuthStateChanged
         } catch (erro) {
-            alert('Erro ao iniciar sessão: ' + erro.message);
+            alert('Erro ao entrar: ' + traduzirErroAuth(erro));
         }
     });
+}
+
+async function iniciarSessao(user) {
+    usuarioUid = user.uid;
+    usuarioLogadoEmail = user.email || '';
+    usuarioLogadoNome = user.displayName || (user.email ? user.email.split('@')[0] : 'Usuário');
+
+    const { db, doc, getDoc, setDoc } = window.firebaseDB;
+
+    // Registra o acesso (e recria o perfil caso não exista)
+    try {
+        await setDoc(doc(db, "usuarios", usuarioUid), {
+            usuario: usuarioLogadoNome,
+            email: usuarioLogadoEmail,
+            ultimoAcesso: Date.now()
+        }, { merge: true });
+    } catch (erro) {
+        console.error("Erro ao registrar acesso:", erro);
+    }
+
+    // Verifica se é administrador (documento admins/{uid}, criado só pelo Console)
+    usuarioEhAdmin = false;
+    try {
+        const adminSnap = await getDoc(doc(db, "admins", usuarioUid));
+        usuarioEhAdmin = adminSnap.exists();
+    } catch (erro) {
+        usuarioEhAdmin = false;
+    }
+    if (btnPainelAdmin) btnPainelAdmin.style.display = usuarioEhAdmin ? 'block' : 'none';
+
+    await ativarSessaoLogada();
 }
 
 async function ativarSessaoLogada() {
@@ -338,6 +384,51 @@ async function ativarSessaoLogada() {
     telaLogado.classList.add('ativa');
     await carregarDadosDoUsuarioDaNuvem();
     await carregarAvisosGlobaisDaNuvem();
+}
+
+function limparSessaoLocal() {
+    clearTimeout(timeoutSalvarNuvem);
+    usuarioUid = '';
+    usuarioLogadoEmail = '';
+    usuarioLogadoNome = '';
+    usuarioEhAdmin = false;
+    agendaPorSemana = {};
+    financeiroPorSemana = {};
+    listaLembretes = [];
+    listaHistoricoNotifs = [];
+    if (btnPainelAdmin) btnPainelAdmin.style.display = 'none';
+    if (abaBtnAdmin) abaBtnAdmin.style.display = 'none';
+
+    // volta para a aba principal para o próximo login não abrir no admin
+    document.querySelectorAll('.btn-aba').forEach(b => b.classList.toggle('ativa', b.dataset.aba === 'aba-principal'));
+    document.querySelectorAll('.conteudo-aba').forEach(c => c.classList.toggle('ativa', c.id === 'aba-principal'));
+
+    telaLogado.classList.remove('ativa');
+    telaInicial.classList.add('ativa');
+}
+
+async function encerrarSessao() {
+    clearTimeout(timeoutSalvarNuvem);
+    await sincronizarAgora(); // garante que nada se perca antes de sair
+    try {
+        await window.firebaseDB.signOut(window.firebaseDB.auth);
+    } catch (erro) {
+        console.error("Erro ao sair:", erro);
+    }
+    limparSessaoLocal();
+}
+
+// Mantém a sessão entre recarregamentos da página (o Firebase guarda o login)
+function iniciarObservadorDeSessao() {
+    const { auth, onAuthStateChanged } = window.firebaseDB;
+    onAuthStateChanged(auth, async (user) => {
+        if (cadastroEmAndamento) return;
+        if (user) {
+            await iniciarSessao(user);
+        } else {
+            limparSessaoLocal();
+        }
+    });
 }
 
 // --- MENU HAMBÚRGUER ---
@@ -355,9 +446,9 @@ window.addEventListener('click', () => {
 });
 
 if (btnTrocarConta) {
-    btnTrocarConta.addEventListener('click', () => {
+    btnTrocarConta.addEventListener('click', async () => {
         dropdownMenu.classList.remove('mostrar');
-        encerrarSessao();
+        await encerrarSessao();
         modalLogin.style.display = 'block';
     });
 }
@@ -376,16 +467,6 @@ if (btnDesconectar) {
     });
 }
 
-function encerrarSessao() {
-    localStorage.removeItem('planify_sessao_ativa');
-    localStorage.removeItem('planify_nome_ativo');
-    usuarioLogadoEmail = '';
-    usuarioLogadoNome = '';
-    if (abaBtnAdmin) abaBtnAdmin.style.display = 'none';
-    telaLogado.classList.remove('ativa');
-    telaInicial.classList.add('ativa');
-}
-
 // SUPORTE
 if (btnSuporte) {
     btnSuporte.addEventListener('click', () => {
@@ -394,109 +475,105 @@ if (btnSuporte) {
     });
 }
 
-// PAINEL ADMIN PROTEGIDO (CONECTADO AO FIRESTORE)
+// --- PAINEL ADMIN (liberado só para contas listadas em admins/{uid}; as regras do Firestore reforçam isso) ---
 if (btnPainelAdmin) {
     btnPainelAdmin.addEventListener('click', () => {
         dropdownMenu.classList.remove('mostrar');
-        const codigoDigitado = prompt("Digite o código de acesso administrativo:")?.trim();
+        if (!usuarioEhAdmin) return;
 
-        if (CODIGOS_ADMIN_VALIDOS.includes(codigoDigitado)) {
-            if (abaBtnAdmin) abaBtnAdmin.style.display = 'inline-block';
+        if (abaBtnAdmin) abaBtnAdmin.style.display = 'inline-block';
 
-            document.querySelectorAll('.btn-aba').forEach(b => b.classList.remove('ativa'));
-            document.querySelectorAll('.conteudo-aba').forEach(c => c.classList.remove('ativa'));
+        document.querySelectorAll('.btn-aba').forEach(b => b.classList.remove('ativa'));
+        document.querySelectorAll('.conteudo-aba').forEach(c => c.classList.remove('ativa'));
 
-            const abaAdmin = document.getElementById('aba-admin');
-            if (abaAdmin) {
-                abaAdmin.classList.add('ativa');
-                if (abaBtnAdmin) abaBtnAdmin.classList.add('ativa');
-                atualizarMetricasAdmin();
-            }
-        } else if (codigoDigitado !== null) {
-            alert("Código de acesso incorreto!");
+        const abaAdmin = document.getElementById('aba-admin');
+        if (abaAdmin) {
+            abaAdmin.classList.add('ativa');
+            if (abaBtnAdmin) abaBtnAdmin.classList.add('ativa');
+            atualizarMetricasAdmin();
         }
     });
 }
 
 async function atualizarMetricasAdmin() {
-    if (!window.firebaseDB) return;
+    if (!window.firebaseDB || !usuarioEhAdmin) return;
     const { db, collection, getDocs } = window.firebaseDB;
 
     const corpoTabela = document.getElementById('admin-corpo-tabela-usuarios');
-    if (corpoTabela) corpoTabela.innerHTML = '<tr><td colspan="3" style="text-align:center;">A carregar dados da nuvem...</td></tr>';
+    if (corpoTabela) corpoTabela.innerHTML = '<tr><td colspan="3" style="text-align:center;">Carregando dados da nuvem...</td></tr>';
 
     try {
+        // O admin lê apenas os perfis (nome, e-mail e contadores). Nunca agenda nem financeiro.
         const usersSnap = await getDocs(collection(db, "usuarios"));
-        const dadosSnap = await getDocs(collection(db, "dados_usuarios"));
 
+        const JANELA_ATIVOS = 30 * 60 * 1000; // 30 minutos
+        const agora = Date.now();
         let totalUsuarios = 0;
+        let ativos = 0;
         let registrosGlobais = 0;
         const listaUsuarios = [];
 
         usersSnap.forEach((docSnap) => {
+            const u = docSnap.data();
             totalUsuarios++;
-            listaUsuarios.push(docSnap.data());
-        });
-
-        // Soma apenas a contagem de registos para preservar a privacidade total
-        dadosSnap.forEach((docSnap) => {
-            const d = docSnap.data();
-            if (d.agenda) {
-                Object.values(d.agenda).forEach(sem => { registrosGlobais += Object.keys(sem).length; });
-            }
-            if (d.financeiro) {
-                Object.values(d.financeiro).forEach(sem => { registrosGlobais += Object.keys(sem).length; });
-            }
+            registrosGlobais += Number(u.totalRegistros) || 0;
+            if (u.ultimoAcesso && agora - u.ultimoAcesso <= JANELA_ATIVOS) ativos++;
+            listaUsuarios.push({ uid: docSnap.id, ...u });
         });
 
         document.getElementById('admin-total-usuarios').textContent = totalUsuarios;
-        document.getElementById('admin-usuarios-logados').textContent = totalUsuarios > 0 ? `${totalUsuarios} na base` : '0';
+        document.getElementById('admin-usuarios-logados').textContent = `${ativos} (últimos 30 min)`;
         document.getElementById('admin-registros-hoje').textContent = registrosGlobais;
 
         if (corpoTabela) {
             corpoTabela.innerHTML = '';
             if (listaUsuarios.length === 0) {
-                corpoTabela.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #a3c1ad;">Nenhum utilizador registado ainda.</td></tr>';
+                corpoTabela.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #a3c1ad;">Nenhum usuário registrado ainda.</td></tr>';
             } else {
                 listaUsuarios.forEach(u => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${escapeXML(u.usuario)}</td>
-                        <td>${escapeXML(u.email)}</td>
-                        <td>
-                            <button type="button" onclick="adminExcluirConta('${escapeXML(u.email)}')" style="padding: 4px 8px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Excluir</button>
-                        </td>
+                        <td>${escapeXML(u.usuario || '-')}</td>
+                        <td>${escapeXML(u.email || '-')}</td>
+                        <td></td>
                     `;
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.textContent = 'Remover dados';
+                    btn.style.cssText = 'padding: 4px 8px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;';
+                    btn.addEventListener('click', () => adminRemoverDados(u.uid, u.email));
+                    tr.lastElementChild.appendChild(btn);
                     corpoTabela.appendChild(tr);
                 });
             }
         }
     } catch (erro) {
         console.error("Erro ao carregar métricas admin:", erro);
+        if (corpoTabela) corpoTabela.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#e74c3c;">Sem permissão ou erro ao carregar.</td></tr>';
     }
 }
 
-window.adminExcluirConta = async function(emailUsuario) {
-    if (!window.firebaseDB) return;
-    if (confirm(`Tens a certeza que desejas excluir a conta de ${emailUsuario} da nuvem?`)) {
-        const { db, doc, deleteDoc } = window.firebaseDB;
-        try {
-            await deleteDoc(doc(db, "usuarios", emailUsuario));
-            await deleteDoc(doc(db, "dados_usuarios", emailUsuario));
-            alert('Conta removida da nuvem com sucesso.');
-            atualizarMetricasAdmin();
-        } catch (e) {
-            alert('Erro ao excluir conta: ' + e.message);
-        }
-    }
-};
+async function adminRemoverDados(uid, email) {
+    if (!window.firebaseDB || !usuarioEhAdmin) return;
+    if (!confirm(`Remover o perfil e todos os dados de ${email} da nuvem?\n\nObs.: o login em si só pode ser apagado no Console do Firebase (Authentication).`)) return;
 
-// Disparar aviso global na nuvem para todos os utilizadores
+    const { db, doc, deleteDoc } = window.firebaseDB;
+    try {
+        await deleteDoc(doc(db, "dados_usuarios", uid));
+        await deleteDoc(doc(db, "usuarios", uid));
+        alert('Dados removidos da nuvem.');
+        atualizarMetricasAdmin();
+    } catch (e) {
+        alert('Erro ao remover dados: ' + e.message);
+    }
+}
+
+// Aviso global para todos os usuários
 const formAdminAviso = document.getElementById('form-admin-aviso');
 if (formAdminAviso) {
     formAdminAviso.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (!window.firebaseDB) return;
+        if (!window.firebaseDB || !usuarioEhAdmin) return;
 
         const titulo = document.getElementById('admin-aviso-titulo').value.trim();
         const texto = document.getElementById('admin-aviso-texto').value.trim();
@@ -514,7 +591,7 @@ if (formAdminAviso) {
             });
 
             formAdminAviso.reset();
-            alert('Aviso global publicado na nuvem! Aparecerá no sininho de todos os utilizadores.');
+            alert('Aviso global publicado! Aparecerá no sininho de todos os usuários.');
             await carregarAvisosGlobaisDaNuvem();
         } catch (erro) {
             alert('Erro ao publicar aviso: ' + erro.message);
@@ -522,24 +599,32 @@ if (formAdminAviso) {
     });
 }
 
-// Botão de Backup Geral em JSON (da nuvem)
+// Backup dos perfis em JSON (sem senhas e sem dados pessoais de agenda/financeiro)
 const btnAdminBackup = document.getElementById('btn-admin-backup');
 if (btnAdminBackup) {
     btnAdminBackup.addEventListener('click', async () => {
-        if (!window.firebaseDB) return;
+        if (!window.firebaseDB || !usuarioEhAdmin) return;
         const { db, collection, getDocs } = window.firebaseDB;
-        const usersSnap = await getDocs(collection(db, "usuarios"));
-        const backup = [];
-        usersSnap.forEach(d => backup.push({ email: d.id, usuario: d.data().usuario, criadoEm: d.data().criadoEm }));
+        try {
+            const usersSnap = await getDocs(collection(db, "usuarios"));
+            const backup = [];
+            usersSnap.forEach(d => {
+                const u = d.data();
+                backup.push({ uid: d.id, usuario: u.usuario, email: u.email, criadoEm: u.criadoEm });
+            });
 
-        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `PlaniFy_Backup_Usuarios_${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `PlaniFy_Backup_Usuarios_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (erro) {
+            alert('Erro ao gerar backup: ' + erro.message);
+        }
     });
 }
 
@@ -594,10 +679,9 @@ function gerarTabelaAgenda() {
     const hoje = new Date();
 
     for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
-        const hora = hIndex + HORA_INICIAL;
         const tr = document.createElement('tr');
         const tdHorario = document.createElement('td');
-        tdHorario.textContent = hora < 10 ? `0${hora}:00` : `${hora}:00`;
+        tdHorario.textContent = formatarHora(hIndex);
         tdHorario.classList.add('coluna-horario');
         tr.appendChild(tdHorario);
 
@@ -632,10 +716,9 @@ function gerarTabelaFinanceira() {
     const hoje = new Date();
 
     for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
-        const hora = hIndex + HORA_INICIAL;
         const tr = document.createElement('tr');
         const tdHorario = document.createElement('td');
-        tdHorario.textContent = hora < 10 ? `0${hora}:00` : `${hora}:00`;
+        tdHorario.textContent = formatarHora(hIndex);
         tdHorario.classList.add('coluna-horario');
         tr.appendChild(tdHorario);
 
@@ -802,7 +885,7 @@ function atualizarResumoSemanal() {
             const item = itemFinanceiro(chave, hIndex, dia);
             if (item.valor > 0) {
                 encontrouTransacao = true;
-                const horaText = (hIndex + HORA_INICIAL) < 10 ? `0${hIndex + HORA_INICIAL}:00` : `${hIndex + HORA_INICIAL}:00`;
+                const horaText = formatarHora(hIndex);
                 const nomeAtividade = textoAgenda(chave, hIndex, dia) || 'Sem nome';
                 const cor = item.tipo === 'entrada' ? '#2ecc71' : '#e74c3c';
                 const sinal = item.tipo === 'entrada' ? '+' : '-';
@@ -954,13 +1037,12 @@ function coletarDadosDaNota() {
             const valorNum = fin && Number(fin.valor) > 0 ? Number(fin.valor) : 0;
             const tipoValido = fin && (fin.tipo === 'entrada' || fin.tipo === 'saida') ? fin.tipo : '';
             if (atividade !== '' || valorNum > 0) {
-                const horaText = (hIndex + HORA_INICIAL) < 10 ? `0${hIndex + HORA_INICIAL}:00` : `${hIndex + HORA_INICIAL}:00`;
-                itensDoDia.push({ hora: horaText, atividade: atividade || 'Lançamento financeiro', tipo: valorNum > 0 ? tipoValido : '', valor: valorNum });
+                itensDoDia.push({ hora: formatarHora(hIndex), atividade: atividade || 'Lançamento financeiro', tipo: valorNum > 0 ? tipoValido : '', valor: valorNum });
             }
         }
         dias.push({ itens: itensDoDia });
     }
-    return { usuario: usuarioLogadoNome || 'Utilizador PlaniFy', semanaInicio: semanaSelecionada, emissao: new Date(), dias };
+    return { usuario: usuarioLogadoNome || 'Usuário PlaniFy', semanaInicio: semanaSelecionada, emissao: new Date(), dias };
 }
 
 function atualizarNotaAoVivo() {
@@ -976,7 +1058,7 @@ function atualizarNotaAoVivo() {
             urlPreviaAtual = URL.createObjectURL(blob);
             if (iframe) iframe.src = urlPreviaAtual;
             if (status) {
-                status.textContent = `Nota atualizada · ${resultado.resumo.registros} registos · Saldo: ${window.PlanifyNota.moedaComSinal(resultado.resumo.saldo)}`;
+                status.textContent = `Nota atualizada · ${resultado.resumo.registros} registros · Saldo: ${window.PlanifyNota.moedaComSinal(resultado.resumo.saldo)}`;
                 status.style.color = '#2ecc71';
             }
         } catch (erro) {}
@@ -1003,6 +1085,7 @@ if (btnBaixarNota && menuFormatosNota) {
                 const resultado = window.PlanifyNota.gerarNotaPDF(coletarDadosDaNota());
                 const url = URL.createObjectURL(new Blob([resultado.bytes], { type: 'application/pdf' }));
                 const a = document.createElement('a'); a.href = url; a.download = resultado.nomeArquivo; a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
             } else if (formato === 'xml-nfe') {
                 baixarTextoComoArquivo(`<?xml version="1.0" encoding="UTF-8"?><nfeProc versao="4.00"><NFe><infNFe><emit><xNome>${escapeXML(usuarioLogadoNome)}</xNome></emit></infNFe></NFe></nfeProc>`, 'PlaniFy_NFe.xml', 'application/xml');
             } else if (formato === 'xml-planify') {
@@ -1019,6 +1102,7 @@ function escapeXML(str) {
 function baixarTextoComoArquivo(conteudo, nome, mime) {
     const url = URL.createObjectURL(new Blob([conteudo], { type: mime + ';charset=utf-8;' }));
     const a = document.createElement('a'); a.href = url; a.download = nome; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // --- LEMBRETES (SINCRONIZADOS NA NUVEM) ---
@@ -1057,11 +1141,11 @@ function renderizarLembretes() {
         card.innerHTML = `
             <div class="info-lembrete">
                 <h4>${escapeXML(l.titulo)}</h4>
-                <p>R$ ${l.valor.toFixed(2)} · ${l.data} às ${l.hora}</p>
+                <p>R$ ${Number(l.valor).toFixed(2)} · ${escapeXML(l.data)} às ${escapeXML(l.hora)}</p>
             </div>
             <div class="acoes-lembrete">
-                <button class="btn-acao-lembrete" onclick="alternarLembrete(${l.id})">✓</button>
-                <button class="btn-acao-lembrete" onclick="excluirLembrete(${l.id})">🗑</button>
+                <button class="btn-acao-lembrete" onclick="alternarLembrete(${Number(l.id)})">✓</button>
+                <button class="btn-acao-lembrete" onclick="excluirLembrete(${Number(l.id)})">🗑</button>
             </div>
         `;
         containerListaLembretes.appendChild(card);
@@ -1086,13 +1170,9 @@ if (btnAtivarNotificacoes) {
     });
 }
 
-// INICIALIZAÇÃO QUANDO O FIREBASE ESTIVER PRONTO
-window.addEventListener('firebasePronto', () => {
-    if (usuarioLogadoEmail) {
-        ativarSessaoLogada();
-    }
-});
-
-
-
-
+// INICIALIZAÇÃO: espera o Firebase ficar pronto e passa a observar o login
+if (window.firebaseDB) {
+    iniciarObservadorDeSessao();
+} else {
+    window.addEventListener('firebasePronto', iniciarObservadorDeSessao);
+}
