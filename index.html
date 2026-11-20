@@ -544,7 +544,7 @@
     </div>
 
     <!-- Inicialização do Firebase -->
-    <script type="module">
+   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import {
         getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc
@@ -554,7 +554,15 @@
         signOut, onAuthStateChanged, updateProfile
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    const firebaseConfig = { /* ...a sua config atual... */ };
+    const firebaseConfig = {
+        apiKey: "AIzaSyA4SJD60jBSCbMdLrj5Q4Ih2y5RkEW0k0k",
+        authDomain: "projeto-planify.firebaseapp.com",
+        projectId: "projeto-planify",
+        storageBucket: "projeto-planify.firebasestorage.app",
+        messagingSenderId: "1021430412947",
+        appId: "1:1021430412947:web:bc2cfdc2f0198b757bff66",
+        measurementId: "G-77PR0VLNEW"
+    };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -568,7 +576,6 @@
 
     window.dispatchEvent(new Event('firebasePronto'));
 </script>
-
     <script src="nota-pdf.js"></script>
     <script src="script.js"></script>
     <script src="landing.js"></script>
