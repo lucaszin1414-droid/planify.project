@@ -8,6 +8,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Esqueci minha senha / Configurações / avisos na tela */
+        .modal-conteudo .link-esqueci { background: none; color: #a3c1ad; font-weight: normal; font-size: 13px; text-decoration: underline; padding: 4px; }
+        .modal-conteudo .link-esqueci:hover { color: #ffffff; }
+        .modal-config-conteudo { width: 380px; max-width: 92vw; max-height: 86vh; overflow-y: auto; margin: 4% auto; }
+        .cfg-email { font-size: 13px; color: #a3c1ad; text-align: center; margin-bottom: 6px; word-break: break-all; }
+        .cfg-secao { border-top: 1px solid #2a4d34; padding-top: 14px; margin-top: 14px; }
+        .cfg-secao h3 { font-size: 15px; margin-bottom: 10px; }
+        .cfg-secao.perigo h3 { color: #ff6b6b; }
+        .cfg-ajuda { font-size: 12px; color: #a3c1ad; line-height: 1.5; margin-bottom: 10px; }
+        .modal-conteudo .btn-perigo { background: #e74c3c; color: #ffffff; }
+        #area-toasts { position: fixed; top: 16px; right: 16px; z-index: 50; display: flex; flex-direction: column; gap: 8px; max-width: 320px; }
+        .toast-planify { background: #122418; color: #ffffff; border: 1px solid #2ecc71; border-left: 5px solid #2ecc71; border-radius: 8px; padding: 12px 14px; font-size: 14px; line-height: 1.4; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4); cursor: pointer; }
+    </style>
 </head>
 <body>
 
@@ -539,7 +553,43 @@
                 <input type="email" id="login-email" placeholder="E-mail" required>
                 <input type="password" id="login-senha" placeholder="Senha" required>
                 <button type="submit">Entrar</button>
+                <button type="button" id="btn-esqueci-senha" class="link-esqueci">Esqueci minha senha</button>
             </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIGURAÇÕES -->
+    <div id="modal-config" class="modal">
+        <div class="modal-conteudo modal-config-conteudo">
+            <span class="fechar" id="fechar-config">&times;</span>
+            <h2>Configurações</h2>
+            <p class="cfg-email" id="cfg-email"></p>
+
+            <div class="cfg-secao">
+                <h3>Nome de usuário</h3>
+                <form id="form-cfg-nome">
+                    <input type="text" id="cfg-nome" placeholder="Seu nome" maxlength="40" required>
+                    <button type="submit">Salvar nome</button>
+                </form>
+            </div>
+
+            <div class="cfg-secao">
+                <h3>Alterar senha</h3>
+                <form id="form-cfg-senha">
+                    <input type="password" id="cfg-senha-atual" placeholder="Senha atual" required>
+                    <input type="password" id="cfg-senha-nova" placeholder="Nova senha (mínimo 6 caracteres)" minlength="6" required>
+                    <button type="submit">Alterar senha</button>
+                </form>
+            </div>
+
+            <div class="cfg-secao perigo">
+                <h3>Excluir minha conta</h3>
+                <p class="cfg-ajuda">Apaga a conta, a agenda, o financeiro e os lembretes. Não dá para desfazer.</p>
+                <form id="form-cfg-excluir">
+                    <input type="password" id="cfg-senha-excluir" placeholder="Digite sua senha para confirmar" required>
+                    <button type="submit" class="btn-perigo">Excluir minha conta</button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -551,7 +601,8 @@
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import {
             getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-            signOut, onAuthStateChanged, updateProfile
+            signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail,
+            EmailAuthProvider, reauthenticateWithCredential, updatePassword, deleteUser
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
@@ -571,7 +622,8 @@
         window.firebaseDB = {
             db, auth, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot,
             createUserWithEmailAndPassword, signInWithEmailAndPassword,
-            signOut, onAuthStateChanged, updateProfile
+            signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail,
+            EmailAuthProvider, reauthenticateWithCredential, updatePassword, deleteUser
         };
 
         window.dispatchEvent(new Event('firebasePronto'));
