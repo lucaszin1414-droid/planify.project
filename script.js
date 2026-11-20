@@ -9,6 +9,7 @@ const telaLogado = document.getElementById('tela-logado');
 // Referências dos Modais
 const modalCadastro = document.getElementById('modal-cadastro');
 const modalLogin = document.getElementById('modal-login');
+const modalConfig = document.getElementById('modal-config');
 
 // Botões do Header Inicial
 const btnCadastroHeader = document.getElementById('btn-cadastro-header');
@@ -38,6 +39,9 @@ let usuarioLogadoEmail = '';
 let usuarioLogadoNome = '';
 let usuarioEhAdmin = false;
 let cadastroEmAndamento = false;
+let excluindoConta = false;
+let intervaloLembretes = null;
+let notifsPessoais = []; // avisos dos lembretes de pagamento (ficam salvos na conta)
 
 // O botão "Painel Admin" do menu só aparece para administradores
 if (btnPainelAdmin) btnPainelAdmin.style.display = 'none';
@@ -63,7 +67,12 @@ if (btnSininho) {
 if (btnLimparNotifs) {
     btnLimparNotifs.addEventListener('click', () => {
         marcarNotificacoesComoLidas();
-        listaHistoricoNotifs = [];
+        // avisos globais: ficam ocultos só para esta conta; lembretes: apagados
+        const ocultas = new Set(lerListaLocal(chaveOcultas()));
+        listaHistoricoNotifs.forEach(n => ocultas.add('g-' + n.id));
+        localStorage.setItem(chaveOcultas(), JSON.stringify([...ocultas]));
+        notifsPessoais = [];
+        sincronizarDadosComNuvem();
         renderizarPainelNotificacoes();
     });
 }
@@ -99,12 +108,45 @@ function pararEscutaDeAvisos() {
     }
 }
 
+function chaveLidas() { return `planify_notifs_lidas_${usuarioUid}`; }
+function chaveOcultas() { return `planify_notifs_ocultas_${usuarioUid}`; }
+
+function lerListaLocal(chave) {
+    try { return JSON.parse(localStorage.getItem(chave) || '[]'); } catch (e) { return []; }
+}
+
+// Junta lembretes (pessoais) e avisos globais numa lista só, do mais novo para o mais antigo
+function obterNotificacoesVisiveis() {
+    const ocultas = lerListaLocal(chaveOcultas());
+
+    const globais = listaHistoricoNotifs
+        .filter(n => !ocultas.includes('g-' + n.id))
+        .map(n => ({
+            chave: 'g-' + n.id,
+            tipo: 'global',
+            titulo: n.titulo,
+            texto: `${n.mensagem || n.valor || ''}${n.horario ? ' — ' + n.horario : ''}`,
+            timestamp: Number(n.timestamp) || 0
+        }));
+
+    const pessoais = notifsPessoais.map(n => ({
+        chave: 'l-' + n.id,
+        tipo: 'lembrete',
+        titulo: n.titulo,
+        texto: n.texto,
+        timestamp: Number(n.timestamp) || 0
+    }));
+
+    return [...pessoais, ...globais].sort((a, b) => b.timestamp - a.timestamp);
+}
+
 function renderizarPainelNotificacoes() {
     if (!listaNotificacoes) return;
     listaNotificacoes.innerHTML = '';
 
-    const lidasLocal = JSON.parse(localStorage.getItem('planify_notifs_lidas') || '[]');
-    const naoLidas = listaHistoricoNotifs.filter(n => !lidasLocal.includes(String(n.id))).length;
+    const visiveis = obterNotificacoesVisiveis();
+    const lidas = lerListaLocal(chaveLidas());
+    const naoLidas = visiveis.filter(n => !lidas.includes(n.chave)).length;
 
     if (badgeNotificacao) {
         if (naoLidas > 0) {
@@ -115,26 +157,27 @@ function renderizarPainelNotificacoes() {
         }
     }
 
-    if (listaHistoricoNotifs.length === 0) {
+    if (visiveis.length === 0) {
         listaNotificacoes.innerHTML = '<p class="notif-vazia">Nenhuma notificação nova</p>';
         return;
     }
 
-    listaHistoricoNotifs.forEach(notif => {
+    visiveis.forEach(notif => {
         const item = document.createElement('div');
         item.classList.add('item-notificacao', 'alerta-pagamento');
+        const icone = notif.tipo === 'lembrete' ? '⏰ Hora de pagar:' : '📢';
         item.innerHTML = `
-            <strong>📢 ${escapeXML(notif.titulo)}</strong>
-            <span>${escapeXML(String(notif.mensagem || notif.valor || ''))} — ${escapeXML(notif.horario || '')}</span>
+            <strong>${icone} ${escapeXML(notif.titulo)}</strong>
+            <span>${escapeXML(notif.texto)}</span>
         `;
         listaNotificacoes.appendChild(item);
     });
 }
 
 function marcarNotificacoesComoLidas() {
-    const lidasAntigas = JSON.parse(localStorage.getItem('planify_notifs_lidas') || '[]');
-    const ids = Array.from(new Set([...lidasAntigas, ...listaHistoricoNotifs.map(n => String(n.id))]));
-    localStorage.setItem('planify_notifs_lidas', JSON.stringify(ids));
+    const lidas = new Set(lerListaLocal(chaveLidas()));
+    obterNotificacoesVisiveis().forEach(n => lidas.add(n.chave));
+    localStorage.setItem(chaveLidas(), JSON.stringify([...lidas]));
     if (badgeNotificacao) badgeNotificacao.classList.add('oculta');
 }
 
@@ -207,13 +250,16 @@ async function carregarDadosDoUsuarioDaNuvem() {
             agendaPorSemana = dados.agenda || {};
             financeiroPorSemana = dados.financeiro || {};
             listaLembretes = dados.lembretes || [];
+            notifsPessoais = dados.notificacoes || [];
         } else {
             agendaPorSemana = {};
             financeiroPorSemana = {};
             listaLembretes = [];
+            notifsPessoais = [];
         }
         renderizarSemana();
         renderizarLembretes();
+        renderizarPainelNotificacoes();
     } catch (erro) {
         console.error("Erro ao carregar dados do utilizador:", erro);
     }
@@ -227,13 +273,14 @@ function contarRegistros() {
 }
 
 async function sincronizarAgora() {
-    if (!window.firebaseDB || !usuarioUid) return;
+    if (!window.firebaseDB || !usuarioUid || excluindoConta) return;
     const { db, doc, setDoc } = window.firebaseDB;
     try {
         await setDoc(doc(db, "dados_usuarios", usuarioUid), {
             agenda: agendaPorSemana,
             financeiro: financeiroPorSemana,
             lembretes: listaLembretes,
+            notificacoes: notifsPessoais,
             ultimaAtualizacao: new Date().toISOString()
         });
         // Perfil: guarda apenas CONTADORES (o admin nunca vê o conteúdo)
@@ -286,6 +333,7 @@ if (fecharLogin) fecharLogin.addEventListener('click', () => modalLogin.style.di
 window.addEventListener('click', (event) => {
     if (event.target === modalCadastro) modalCadastro.style.display = 'none';
     if (event.target === modalLogin) modalLogin.style.display = 'none';
+    if (event.target === modalConfig) modalConfig.style.display = 'none';
 });
 
 function traduzirErroAuth(erro) {
@@ -299,6 +347,8 @@ function traduzirErroAuth(erro) {
         case 'auth/too-many-requests': return 'Muitas tentativas. Aguarde alguns minutos e tente de novo.';
         case 'auth/network-request-failed': return 'Sem conexão com a internet.';
         case 'auth/operation-not-allowed': return 'Login por e-mail/senha não está ativado no Firebase.';
+        case 'auth/requires-recent-login': return 'Por segurança, saia e entre novamente antes de fazer isso.';
+        case 'auth/missing-password': return 'Digite a senha.';
         default: return (erro && erro.message) || 'Erro desconhecido.';
     }
 }
@@ -361,6 +411,128 @@ if (formLogin) {
     });
 }
 
+// --- ESQUECI MINHA SENHA ---
+const btnEsqueciSenha = document.getElementById('btn-esqueci-senha');
+if (btnEsqueciSenha) {
+    btnEsqueciSenha.addEventListener('click', async () => {
+        if (!window.firebaseDB) return alert("Aguardando ligação com a nuvem...");
+
+        let email = document.getElementById('login-email').value.trim().toLowerCase();
+        if (!email) email = (prompt('Digite o e-mail da sua conta:') || '').trim().toLowerCase();
+        if (!email) return;
+
+        const { auth, sendPasswordResetEmail } = window.firebaseDB;
+        try {
+            await sendPasswordResetEmail(auth, email);
+            alert('Se existir uma conta com esse e-mail, enviamos um link para redefinir a senha. Confira também a caixa de spam.');
+        } catch (erro) {
+            alert('Não foi possível enviar: ' + traduzirErroAuth(erro));
+        }
+    });
+}
+
+// --- CONFIGURAÇÕES DA CONTA ---
+function abrirConfiguracoes() {
+    if (!usuarioUid || !modalConfig) return;
+    document.getElementById('cfg-email').textContent = usuarioLogadoEmail;
+    document.getElementById('cfg-nome').value = usuarioLogadoNome;
+    ['cfg-senha-atual', 'cfg-senha-nova', 'cfg-senha-excluir'].forEach(id => { document.getElementById(id).value = ''; });
+    modalConfig.style.display = 'block';
+}
+
+const fecharConfig = document.getElementById('fechar-config');
+if (fecharConfig) fecharConfig.addEventListener('click', () => modalConfig.style.display = 'none');
+
+// Operações sensíveis pedem a senha atual de novo
+async function reautenticar(senhaAtual) {
+    const { auth, EmailAuthProvider, reauthenticateWithCredential } = window.firebaseDB;
+    const user = auth.currentUser;
+    if (!user) throw new Error('Sessão expirada. Entre novamente.');
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, senhaAtual));
+    return user;
+}
+
+const formCfgNome = document.getElementById('form-cfg-nome');
+if (formCfgNome) {
+    formCfgNome.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nome = document.getElementById('cfg-nome').value.trim();
+        if (nome.length < 2 || nome.length > 40) return alert('O nome deve ter entre 2 e 40 caracteres.');
+
+        const { auth, db, doc, setDoc, updateProfile } = window.firebaseDB;
+        try {
+            await updateProfile(auth.currentUser, { displayName: nome });
+            await setDoc(doc(db, "usuarios", usuarioUid), { usuario: nome }, { merge: true });
+            usuarioLogadoNome = nome;
+            boasVindasTitulo.innerText = `Bem-vindo(a), ${usuarioLogadoNome}!`;
+            atualizarNotaAoVivo();
+            alert('Nome atualizado!');
+        } catch (erro) {
+            alert('Erro ao atualizar o nome: ' + traduzirErroAuth(erro));
+        }
+    });
+}
+
+const formCfgSenha = document.getElementById('form-cfg-senha');
+if (formCfgSenha) {
+    formCfgSenha.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const atual = document.getElementById('cfg-senha-atual').value;
+        const nova = document.getElementById('cfg-senha-nova').value;
+        if (nova.length < 6) return alert('A nova senha precisa ter pelo menos 6 caracteres.');
+        if (nova === atual) return alert('A nova senha precisa ser diferente da atual.');
+
+        try {
+            const user = await reautenticar(atual);
+            await window.firebaseDB.updatePassword(user, nova);
+            formCfgSenha.reset();
+            alert('Senha alterada com sucesso!');
+        } catch (erro) {
+            alert('Erro ao alterar a senha: ' + traduzirErroAuth(erro));
+        }
+    });
+}
+
+const formCfgExcluir = document.getElementById('form-cfg-excluir');
+if (formCfgExcluir) {
+    formCfgExcluir.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const senha = document.getElementById('cfg-senha-excluir').value;
+        if (!senha) return alert('Digite a sua senha para confirmar.');
+        if (!confirm('Tem certeza? Sua conta, agenda, financeiro e lembretes serão apagados para sempre. Isso não pode ser desfeito.')) return;
+
+        const { auth, db, doc, deleteDoc, deleteUser } = window.firebaseDB;
+        const uidExcluido = usuarioUid;
+        try {
+            const user = await reautenticar(senha);
+
+            // trava as gravações automáticas para nada ser recriado depois da exclusão
+            excluindoConta = true;
+            clearTimeout(timeoutSalvarNuvem);
+            pararEscutaDeAvisos();
+            pararVerificadorDeLembretes();
+
+            await deleteDoc(doc(db, "dados_usuarios", uidExcluido));
+            await deleteDoc(doc(db, "usuarios", uidExcluido));
+            await deleteUser(user);
+
+            localStorage.removeItem(`planify_notifs_lidas_${uidExcluido}`);
+            localStorage.removeItem(`planify_notifs_ocultas_${uidExcluido}`);
+            modalConfig.style.display = 'none';
+            limparSessaoLocal();
+            excluindoConta = false;
+            alert('Sua conta foi excluída.');
+        } catch (erro) {
+            excluindoConta = false;
+            if (auth.currentUser) {
+                iniciarEscutaDeAvisos();
+                iniciarVerificadorDeLembretes();
+            }
+            alert('Erro ao excluir a conta: ' + traduzirErroAuth(erro));
+        }
+    });
+}
+
 async function iniciarSessao(user) {
     usuarioUid = user.uid;
     usuarioLogadoEmail = user.email || '';
@@ -398,11 +570,17 @@ async function ativarSessaoLogada() {
     telaLogado.classList.add('ativa');
     await carregarDadosDoUsuarioDaNuvem();
     iniciarEscutaDeAvisos();
+    renderizarPainelNotificacoes();
+    atualizarBotaoNotificacoes();
+    iniciarVerificadorDeLembretes();
 }
 
 function limparSessaoLocal() {
     clearTimeout(timeoutSalvarNuvem);
     pararEscutaDeAvisos();
+    pararVerificadorDeLembretes();
+    notifsPessoais = [];
+    if (modalConfig) modalConfig.style.display = 'none';
     usuarioUid = '';
     usuarioLogadoEmail = '';
     usuarioLogadoNome = '';
@@ -472,7 +650,7 @@ if (btnTrocarConta) {
 if (btnConfiguracoes) {
     btnConfiguracoes.addEventListener('click', () => {
         dropdownMenu.classList.remove('mostrar');
-        alert('Área de configurações em desenvolvimento.');
+        abrirConfiguracoes();
     });
 }
 
@@ -1149,14 +1327,17 @@ function renderizarLembretes() {
         return;
     }
 
-    listaLembretes.forEach(l => {
+    const ordenados = [...listaLembretes].sort((a, b) => `${a.data}T${a.hora}`.localeCompare(`${b.data}T${b.hora}`));
+
+    ordenados.forEach(l => {
         const card = document.createElement('div');
         card.classList.add('card-item-lembrete');
         if (l.concluido) card.classList.add('pago');
+        else if (l.disparado) card.classList.add('disparado');
         card.innerHTML = `
             <div class="info-lembrete">
                 <h4>${escapeXML(l.titulo)}</h4>
-                <p>R$ ${Number(l.valor).toFixed(2)} · ${escapeXML(l.data)} às ${escapeXML(l.hora)}</p>
+                <p>R$ ${Number(l.valor).toFixed(2)} · ${escapeXML(formatarDataISO(l.data))} às ${escapeXML(l.hora)}${l.disparado && !l.concluido ? ' · ⏰ avisado' : ''}</p>
             </div>
             <div class="acoes-lembrete">
                 <button class="btn-acao-lembrete" onclick="alternarLembrete(${Number(l.id)})">✓</button>
@@ -1179,10 +1360,84 @@ window.excluirLembrete = (id) => {
     renderizarLembretes();
 };
 
+function atualizarBotaoNotificacoes() {
+    if (!btnAtivarNotificacoes) return;
+    if (!('Notification' in window)) { btnAtivarNotificacoes.style.display = 'none'; return; }
+    if (Notification.permission === 'granted') btnAtivarNotificacoes.textContent = '✅ Notificações do navegador ativadas';
+    else if (Notification.permission === 'denied') btnAtivarNotificacoes.textContent = '🚫 Bloqueadas no navegador';
+    else btnAtivarNotificacoes.textContent = '🔔 Ativar Notificações do Navegador';
+}
+
 if (btnAtivarNotificacoes) {
-    btnAtivarNotificacoes.addEventListener('click', () => {
-        if ('Notification' in window) Notification.requestPermission();
+    btnAtivarNotificacoes.addEventListener('click', async () => {
+        if (!('Notification' in window)) return;
+        try { await Notification.requestPermission(); } catch (e) {}
+        atualizarBotaoNotificacoes();
     });
+}
+
+// --- DISPARO AUTOMÁTICO DOS LEMBRETES ---
+function formatarDataISO(iso) {
+    const partes = String(iso || '').split('-');
+    return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : String(iso || '');
+}
+
+function mostrarToast(mensagem) {
+    let area = document.getElementById('area-toasts');
+    if (!area) {
+        area = document.createElement('div');
+        area.id = 'area-toasts';
+        document.body.appendChild(area);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'toast-planify';
+    toast.textContent = mensagem;
+    toast.addEventListener('click', () => toast.remove());
+    area.appendChild(toast);
+    setTimeout(() => toast.remove(), 12000);
+}
+
+function notificarNoNavegador(titulo, corpo) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try { new Notification('⏰ Lembrete de pagamento: ' + titulo, { body: corpo }); } catch (e) {}
+}
+
+function verificarLembretes() {
+    if (!usuarioUid) return;
+    const agora = new Date();
+    let mudou = false;
+
+    listaLembretes.forEach(l => {
+        if (l.concluido || l.disparado) return;
+        const alvo = new Date(`${l.data}T${l.hora}`);
+        if (isNaN(alvo.getTime()) || alvo > agora) return;
+
+        l.disparado = true;
+        mudou = true;
+        const texto = `R$ ${Number(l.valor).toFixed(2)} · ${formatarDataISO(l.data)} às ${l.hora}`;
+        notifsPessoais.unshift({ id: l.id, titulo: l.titulo, texto, timestamp: Date.now() });
+        notificarNoNavegador(l.titulo, texto);
+        mostrarToast(`⏰ ${l.titulo} — ${texto}`);
+    });
+
+    if (mudou) {
+        notifsPessoais = notifsPessoais.slice(0, 30);
+        sincronizarDadosComNuvem();
+        renderizarLembretes();
+        renderizarPainelNotificacoes();
+    }
+}
+
+function iniciarVerificadorDeLembretes() {
+    verificarLembretes(); // os que venceram com o site fechado avisam assim que a conta abre
+    if (!intervaloLembretes) intervaloLembretes = setInterval(verificarLembretes, 30000);
+}
+
+function pararVerificadorDeLembretes() {
+    if (intervaloLembretes) {
+        clearInterval(intervaloLembretes);
+        intervaloLembretes = null;
+    }
 }
 
 // INICIALIZAÇÃO: espera o Firebase ficar pronto e passa a observar o login
