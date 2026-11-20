@@ -32,30 +32,65 @@
         'Outros': '#7f8c8d', 'Sem categoria': '#586e63'
     };
 
-    function preencherCategorias() {
-        const sel = $('categoria-transacao');
-        if (!sel) return;
-        const lista = CATEGORIAS[tipoTransacaoAtual] || CATEGORIAS.saida;
-        const anterior = sel.value;
-        sel.innerHTML = '';
-        lista.forEach(nome => {
-            const op = document.createElement('option');
-            op.value = nome;
-            op.textContent = `${ICONES[nome] || ''} ${nome}`;
-            sel.appendChild(op);
-        });
-        if (lista.includes(anterior)) sel.value = anterior;
+    // A categoria vem do texto que você já escreve na Organização Semanal.
+    // Ex.: "Mercado" -> Alimentação, "Uber" -> Transporte, "Conta de luz" -> Contas.
+    const PALAVRAS = {
+        saida: [
+            ['Saúde', ['farmacia', 'remedio', 'medico', 'consulta', 'dentista', 'exame', 'hospital', 'academia', 'psicolog', 'terapia', 'plano de saude', 'oculos', 'vacina', 'saude']],
+            ['Moradia', ['aluguel', 'condominio', 'iptu', 'reforma', 'movel', 'moveis', 'casa', 'faxina', 'encanador', 'eletricista', 'gas']],
+            ['Transporte', ['uber', '99', 'taxi', 'onibus', 'passagem', 'gasolina', 'combustivel', 'metro', 'estacionamento', 'pedagio', 'moto', 'carro', 'bilhete', 'trem', 'mecanico', 'oficina', 'ipva', 'etanol']],
+            ['Alimentação', ['mercado', 'supermercado', 'almoco', 'jantar', 'lanche', 'cafe', 'padaria', 'restaurante', 'pizza', 'hamburguer', 'comida', 'ifood', 'delivery', 'feira', 'acougue', 'acai', 'sorvete', 'doce', 'bebida', 'refeicao', 'marmita', 'salgado', 'pao', 'churrasco', 'hortifruti', 'sacolao']],
+            ['Educação', ['curso', 'escola', 'faculdade', 'mensalidade', 'livro', 'apostila', 'matricula', 'material escolar', 'caderno', 'prova', 'enem', 'inscricao']],
+            ['Lazer', ['cinema', 'jogo', 'game', 'show', 'festa', 'viagem', 'passeio', 'bar', 'balada', 'parque', 'clube', 'ingresso', 'hotel', 'role', 'rolê', 'churras']],
+            ['Compras', ['roupa', 'sapato', 'tenis', 'camisa', 'calca', 'presente', 'shopping', 'loja', 'eletronico', 'fone', 'amazon', 'shopee', 'cosmetico', 'perfume', 'salao', 'barbearia', 'cabelo', 'mercado livre']],
+            ['Contas', ['luz', 'energia', 'agua', 'internet', 'telefone', 'celular', 'plano', 'boleto', 'fatura', 'cartao', 'conta', 'imposto', 'taxa', 'seguro', 'assinatura', 'netflix', 'spotify', 'wifi', 'recarga', 'parcela', 'emprestimo', 'financiamento']]
+        ],
+        entrada: [
+            ['Mesada', ['mesada']],
+            ['Salário', ['salario', 'pagamento', 'holerite', 'estagio', 'bolsa', '13', 'ferias', 'adiantamento']],
+            ['Extra/Freelance', ['freela', 'freelance', 'extra', 'bico', 'venda', 'vendi', 'servico', 'projeto', 'comissao', 'rendimento', 'reembolso']],
+            ['Presente', ['presente', 'ganhei', 'doacao', 'premio']]
+        ]
+    };
+
+    function normalizar(texto) {
+        return String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     }
 
-    function categoriaAtual() {
-        const sel = $('categoria-transacao');
-        return (sel && sel.value) || 'Outros';
+    function montarRegras(lista) {
+        return lista.map(([nome, palavras]) => {
+            const partes = palavras.map(p => {
+                const base = normalizar(p).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                // palavras curtas só valem inteiras (evita "bar" dentro de "barato")
+                return base.length <= 4 ? `\\b${base}s?\\b` : `\\b${base}`;
+            });
+            return [nome, new RegExp(partes.join('|'))];
+        });
+    }
+
+    const REGRAS = { saida: montarRegras(PALAVRAS.saida), entrada: montarRegras(PALAVRAS.entrada) };
+
+    function categoriaDe(texto, item) {
+        const tipo = item && item.tipo === 'entrada' ? 'entrada' : 'saida';
+        const alvo = normalizar(texto);
+        if (alvo) {
+            for (const [nome, regex] of REGRAS[tipo]) {
+                if (regex.test(alvo)) return nome;
+            }
+        }
+        // lançamentos antigos que já tinham categoria escolhida à mão
+        if (item && item.categoria && item.categoria !== 'Sem categoria') return item.categoria;
+        return 'Outros';
     }
 
     // ---------- Dados da semana ----------
     function itensDaSemana() {
-        const dados = financeiroPorSemana[chaveDia(semanaSelecionada)] || {};
-        return Object.values(dados).filter(i => i && Number(i.valor) > 0);
+        const chave = chaveDia(semanaSelecionada);
+        const dados = financeiroPorSemana[chave] || {};
+        const agenda = agendaPorSemana[chave] || {};
+        return Object.entries(dados)
+            .filter(([, i]) => i && Number(i.valor) > 0)
+            .map(([campo, i]) => ({ ...i, categoriaAuto: categoriaDe(agenda[campo], i) }));
     }
 
     function gastosDaSemana() {
@@ -65,7 +100,7 @@
     function gastosPorCategoria() {
         const mapa = {};
         itensDaSemana().filter(i => i.tipo === 'saida').forEach(i => {
-            const cat = i.categoria || 'Sem categoria';
+            const cat = i.categoriaAuto || 'Outros';
             mapa[cat] = arredondar((mapa[cat] || 0) + Number(i.valor));
         });
         return mapa;
@@ -318,11 +353,14 @@
     ];
     let indiceDica = 0;
 
-    function dicaDoDia() {
-        const hoje = new Date();
-        const inicioAno = new Date(hoje.getFullYear(), 0, 0);
-        const diaDoAno = Math.floor((hoje - inicioAno) / 86400000);
-        return diaDoAno % DICAS.length;
+    // Sorteia uma dica diferente a cada vez que o site é aberto (nunca repete a última)
+    function sortearDica() {
+        let ultima = -1;
+        try { ultima = parseInt(localStorage.getItem('planify_ultima_dica'), 10); } catch (e) {}
+        let novo = Math.floor(Math.random() * DICAS.length);
+        if (DICAS.length > 1 && novo === ultima) novo = (novo + 1 + Math.floor(Math.random() * (DICAS.length - 1))) % DICAS.length;
+        try { localStorage.setItem('planify_ultima_dica', String(novo)); } catch (e) {}
+        return novo;
     }
 
     function renderizarDica() {
@@ -331,11 +369,12 @@
     }
 
     function ligarDica() {
-        indiceDica = dicaDoDia();
+        indiceDica = sortearDica();
         renderizarDica();
         const botao = $('btn-outra-dica');
         if (botao) botao.addEventListener('click', () => {
             indiceDica = (indiceDica + 1) % DICAS.length;
+            try { localStorage.setItem('planify_ultima_dica', String(indiceDica)); } catch (e) {}
             renderizarDica();
         });
     }
@@ -474,7 +513,7 @@
 
                 n++;
                 const saida = valor > 0 && item.tipo === 'saida';
-                const categoria = valor > 0 ? (item.categoria || 'Sem categoria') : '';
+                const categoria = valor > 0 ? categoriaDe(atividade, item) : '';
                 if (valor > 0) {
                     if (saida) { s += valor; porCat[categoria] = (porCat[categoria] || 0) + valor; }
                     else e += valor;
@@ -738,7 +777,7 @@
             atualizarInstalacao();
         },
 
-        categoriaAtual,
+        categoriaDe,
         baixarExcel
     };
 
@@ -750,9 +789,6 @@
     ligarFormOrcamento();
     ligarMetas();
     ligarRepetir();
-
-    preencherCategorias();
-    document.querySelectorAll('.btn-tipo-transacao').forEach(b => b.addEventListener('click', preencherCategorias));
 
     const btnCopiar = $('btn-copiar-semana');
     if (btnCopiar) btnCopiar.addEventListener('click', copiarSemanaAnterior);
