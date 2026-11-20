@@ -43,6 +43,15 @@ let excluindoConta = false;
 let intervaloLembretes = null;
 let notifsPessoais = []; // avisos dos lembretes de pagamento (ficam salvos na conta)
 
+// Ponte para os recursos extras (extras.js): se o arquivo não carregar, o site segue funcionando
+function ext(nome, ...args) {
+    const api = window.PlanifyExtras;
+    if (api && typeof api[nome] === 'function') {
+        try { return api[nome](...args); } catch (erro) { console.error('Extras (' + nome + '):', erro); }
+    }
+    return undefined;
+}
+
 // O botão "Painel Admin" do menu só aparece para administradores
 if (btnPainelAdmin) btnPainelAdmin.style.display = 'none';
 
@@ -94,6 +103,7 @@ function iniciarEscutaDeAvisos() {
             avisosNuvem.sort((a, b) => b.timestamp - a.timestamp);
             listaHistoricoNotifs = avisosNuvem;
             renderizarPainelNotificacoes();
+            ext('aoAvisosAtualizados');
         },
         (erro) => {
             console.error("Erro ao escutar avisos:", erro);
@@ -257,6 +267,7 @@ async function carregarDadosDoUsuarioDaNuvem() {
             listaLembretes = [];
             notifsPessoais = [];
         }
+        ext('aoCarregarDados', docSnap.exists() ? docSnap.data() : null);
         renderizarSemana();
         renderizarLembretes();
         renderizarPainelNotificacoes();
@@ -281,6 +292,7 @@ async function sincronizarAgora() {
             financeiro: financeiroPorSemana,
             lembretes: listaLembretes,
             notificacoes: notifsPessoais,
+            ...(ext('payload') || {}),
             ultimaAtualizacao: new Date().toISOString()
         });
         // Perfil: guarda apenas CONTADORES (o admin nunca vê o conteúdo)
@@ -437,6 +449,7 @@ function abrirConfiguracoes() {
     document.getElementById('cfg-email').textContent = usuarioLogadoEmail;
     document.getElementById('cfg-nome').value = usuarioLogadoNome;
     ['cfg-senha-atual', 'cfg-senha-nova', 'cfg-senha-excluir'].forEach(id => { document.getElementById(id).value = ''; });
+    ext('aoAbrirConfiguracoes');
     modalConfig.style.display = 'block';
 }
 
@@ -580,6 +593,7 @@ function limparSessaoLocal() {
     pararEscutaDeAvisos();
     pararVerificadorDeLembretes();
     notifsPessoais = [];
+    ext('aoLimparSessao');
     if (modalConfig) modalConfig.style.display = 'none';
     usuarioUid = '';
     usuarioLogadoEmail = '';
@@ -685,6 +699,7 @@ if (btnPainelAdmin) {
             abaAdmin.classList.add('ativa');
             if (abaBtnAdmin) abaBtnAdmin.classList.add('ativa');
             atualizarMetricasAdmin();
+            ext('aoAbrirAba', 'aba-admin');
         }
     });
 }
@@ -845,6 +860,7 @@ botoesAba.forEach(botao => {
         } else if (abaId === 'aba-admin') {
             atualizarMetricasAdmin();
         }
+        ext('aoAbrirAba', abaId);
     });
 });
 
@@ -936,6 +952,7 @@ function gerarTabelaFinanceira() {
             const item = itemFinanceiro(chave, hIndex, dia);
             if (item.valor > 0) {
                 inputValor.value = item.valor;
+                if (item.categoria) inputValor.title = item.categoria;
                 inputValor.classList.add(item.tipo === 'entrada' ? 'valor-entrada' : 'valor-saida');
             }
 
@@ -1007,7 +1024,7 @@ function salvarValorFinanceiro(hIndex, diaIndex, valor, inputElement) {
         delete financeiroPorSemana[chave][campo];
         inputElement.classList.remove('valor-entrada', 'valor-saida');
     } else {
-        financeiroPorSemana[chave][campo] = { valor, tipo: tipoTransacaoAtual };
+        financeiroPorSemana[chave][campo] = { valor, tipo: tipoTransacaoAtual, categoria: ext('categoriaAtual') || 'Outros' };
         inputElement.classList.toggle('valor-entrada', tipoTransacaoAtual === 'entrada');
         inputElement.classList.toggle('valor-saida', tipoTransacaoAtual !== 'entrada');
     }
@@ -1015,6 +1032,7 @@ function salvarValorFinanceiro(hIndex, diaIndex, valor, inputElement) {
     sincronizarDadosComNuvem();
     calcularBalancos();
     atualizarNotaAoVivo();
+    ext('aoMudarFinanceiro');
 }
 
 function atualizarAtividadeEspelhada(hIndex, diaIndex, texto) {
@@ -1049,7 +1067,7 @@ function calcularBalancos() {
         const tdBalanco = document.getElementById(`balanco-dia-${dia}`);
         if (tdBalanco) {
             tdBalanco.textContent = `R$ ${balancoDia.toFixed(2)}`;
-            tdBalanco.style.color = balancoDia > 0 ? '#2ecc71' : (balancoDia < 0 ? '#e74c3c' : '#ffffff');
+            tdBalanco.style.color = balancoDia > 0 ? '#2ecc71' : (balancoDia < 0 ? '#e74c3c' : '');
         }
     }
 
@@ -1086,7 +1104,7 @@ function atualizarResumoSemanal() {
                 const divItem = document.createElement('div');
                 divItem.classList.add('item-transacao-detalhe');
                 divItem.innerHTML = `
-                    <span><strong>${diasDaSemana[dia]} ${formatarDataCurta(dataDoDia)} (${horaText})</strong> - ${escapeXML(nomeAtividade)}</span>
+                    <span><strong>${diasDaSemana[dia]} ${formatarDataCurta(dataDoDia)} (${horaText})</strong> - ${escapeXML(nomeAtividade)}${item.categoria ? ' · ' + escapeXML(item.categoria) : ''}</span>
                     <span style="color: ${cor};"><strong>${sinal} R$ ${item.valor.toFixed(2)}</strong></span>
                 `;
                 listaDetalhes.appendChild(divItem);
@@ -1094,6 +1112,7 @@ function atualizarResumoSemanal() {
         }
     }
     if (!encontrouTransacao) listaDetalhes.innerHTML = '<p style="text-align: center; color: #aaaaaa; padding: 10px;">Nenhuma movimentação lançada nesta semana.</p>';
+    ext('aoAtualizarResumo');
 }
 
 function irParaSemana(dataQualquer) {
@@ -1186,6 +1205,7 @@ function renderizarSemana() {
     const painelResumo = document.getElementById('visao-resumo-financeiro');
     if (painelResumo && painelResumo.classList.contains('ativa')) atualizarResumoSemanal();
     atualizarNotaAoVivo();
+    ext('aoRenderizarSemana');
 }
 
 document.addEventListener('click', (e) => {
@@ -1230,7 +1250,7 @@ function coletarDadosDaNota() {
             const valorNum = fin && Number(fin.valor) > 0 ? Number(fin.valor) : 0;
             const tipoValido = fin && (fin.tipo === 'entrada' || fin.tipo === 'saida') ? fin.tipo : '';
             if (atividade !== '' || valorNum > 0) {
-                itensDoDia.push({ hora: formatarHora(hIndex), atividade: atividade || 'Lançamento financeiro', tipo: valorNum > 0 ? tipoValido : '', valor: valorNum });
+                itensDoDia.push({ hora: formatarHora(hIndex), atividade: (atividade || 'Lançamento financeiro') + (valorNum > 0 && fin.categoria ? ` (${fin.categoria})` : ''), tipo: valorNum > 0 ? tipoValido : '', valor: valorNum });
             }
         }
         dias.push({ itens: itensDoDia });
@@ -1279,10 +1299,8 @@ if (btnBaixarNota && menuFormatosNota) {
                 const url = URL.createObjectURL(new Blob([resultado.bytes], { type: 'application/pdf' }));
                 const a = document.createElement('a'); a.href = url; a.download = resultado.nomeArquivo; a.click();
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
-            } else if (formato === 'xml-nfe') {
-                baixarTextoComoArquivo(`<?xml version="1.0" encoding="UTF-8"?><nfeProc versao="4.00"><NFe><infNFe><emit><xNome>${escapeXML(usuarioLogadoNome)}</xNome></emit></infNFe></NFe></nfeProc>`, 'PlaniFy_NFe.xml', 'application/xml');
-            } else if (formato === 'xml-planify') {
-                baixarTextoComoArquivo(`<?xml version="1.0" encoding="UTF-8"?><PlaniFy><Usuario>${escapeXML(usuarioLogadoNome)}</Usuario></PlaniFy>`, `PlaniFy_Dados_${chaveDia(semanaSelecionada)}.xml`, 'application/xml');
+            } else if (formato === 'xlsx') {
+                ext('baixarExcel');
             }
         });
     });
@@ -1290,12 +1308,6 @@ if (btnBaixarNota && menuFormatosNota) {
 
 function escapeXML(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function baixarTextoComoArquivo(conteudo, nome, mime) {
-    const url = URL.createObjectURL(new Blob([conteudo], { type: mime + ';charset=utf-8;' }));
-    const a = document.createElement('a'); a.href = url; a.download = nome; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // --- LEMBRETES (SINCRONIZADOS NA NUVEM) ---
