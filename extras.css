@@ -74,6 +74,7 @@
 .grafico-bloco > strong { display: block; margin-bottom: 10px; }
 .grafico-linha { display: grid; grid-template-columns: 140px 1fr 120px; gap: 10px; align-items: center; margin: 9px 0; font-size: 13px; color: #cfe3d7; }
 .grafico-valor { text-align: right; color: #ffffff; font-weight: bold; }
+.grafico-legenda { font-size: 12px; color: #a3c1ad; line-height: 1.5; margin-bottom: 10px; }
 .vazio-extra { text-align: center; color: #a3c1ad; padding: 10px; font-size: 13px; }
 
 @media (max-width: 600px) {
@@ -143,7 +144,7 @@ html[data-tema="claro"] #tela-logado { background: #eef5f0; color: #12261b; }
 
 html[data-tema="claro"] #tela-logado :is(h1, h2, h3, h4, .semana-titulo, .calendario-dia, .btn-aba, .meta-topo h4, .meta-valores, .dica-cabecalho strong, .orcamento-topo strong, .grafico-bloco > strong, .grafico-valor, .admin-aviso-texto strong, .notif-cabecalho h4, .item-notificacao strong, .info-lembrete h4, .calendario-cabecalho h3) { color: #12261b; }
 
-html[data-tema="claro"] #tela-logado :is(.subtitulo-logado, .semana-sub, .data-cabecalho, .card-metrica span, .campo-grupo label, .info-lembrete p, .notif-vazia, .atividade-info-financeiro, .calendario-legenda, .calendario-dias-semana span, .nota-status, .previa-cabecalho, .item-notificacao span, .meta-info, .vazio-extra, #orcamento-texto, #dica-texto, .grafico-linha, .admin-aviso-texto span, .admin-aviso-texto small, .rep-label) { color: #4f6b5a; }
+html[data-tema="claro"] #tela-logado :is(.subtitulo-logado, .semana-sub, .data-cabecalho, .card-metrica span, .campo-grupo label, .info-lembrete p, .notif-vazia, .atividade-info-financeiro, .calendario-legenda, .calendario-dias-semana span, .nota-status, .previa-cabecalho, .item-notificacao span, .meta-info, .vazio-extra, #orcamento-texto, #dica-texto, .grafico-linha, .grafico-legenda, .admin-aviso-texto span, .admin-aviso-texto small, .rep-label) { color: #4f6b5a; }
 
 html[data-tema="claro"] #tela-logado :is(.resumo-semanal-card, .card-lembrete-form, .card-lembretes-lista, .painel-calendario, .painel-previa-nota, .alternador-visao, .seletor-tipo-transacao) { background: #ffffff; border-color: #c8dccf; color: #12261b; box-shadow: 0 2px 8px rgba(18, 38, 27, 0.08); }
 
