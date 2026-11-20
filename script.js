@@ -952,7 +952,8 @@ function gerarTabelaFinanceira() {
             const item = itemFinanceiro(chave, hIndex, dia);
             if (item.valor > 0) {
                 inputValor.value = item.valor;
-                if (item.categoria) inputValor.title = item.categoria;
+                const catItem = ext('categoriaDe', textoAgenda(chave, hIndex, dia), item);
+                if (catItem) inputValor.title = catItem;
                 inputValor.classList.add(item.tipo === 'entrada' ? 'valor-entrada' : 'valor-saida');
             }
 
@@ -1024,7 +1025,7 @@ function salvarValorFinanceiro(hIndex, diaIndex, valor, inputElement) {
         delete financeiroPorSemana[chave][campo];
         inputElement.classList.remove('valor-entrada', 'valor-saida');
     } else {
-        financeiroPorSemana[chave][campo] = { valor, tipo: tipoTransacaoAtual, categoria: ext('categoriaAtual') || 'Outros' };
+        financeiroPorSemana[chave][campo] = { valor, tipo: tipoTransacaoAtual };
         inputElement.classList.toggle('valor-entrada', tipoTransacaoAtual === 'entrada');
         inputElement.classList.toggle('valor-saida', tipoTransacaoAtual !== 'entrada');
     }
@@ -1104,7 +1105,7 @@ function atualizarResumoSemanal() {
                 const divItem = document.createElement('div');
                 divItem.classList.add('item-transacao-detalhe');
                 divItem.innerHTML = `
-                    <span><strong>${diasDaSemana[dia]} ${formatarDataCurta(dataDoDia)} (${horaText})</strong> - ${escapeXML(nomeAtividade)}${item.categoria ? ' · ' + escapeXML(item.categoria) : ''}</span>
+                    <span><strong>${diasDaSemana[dia]} ${formatarDataCurta(dataDoDia)} (${horaText})</strong> - ${escapeXML(nomeAtividade)}${' · ' + escapeXML(ext('categoriaDe', textoAgenda(chave, hIndex, dia), item) || 'Outros')}</span>
                     <span style="color: ${cor};"><strong>${sinal} R$ ${item.valor.toFixed(2)}</strong></span>
                 `;
                 listaDetalhes.appendChild(divItem);
@@ -1250,7 +1251,7 @@ function coletarDadosDaNota() {
             const valorNum = fin && Number(fin.valor) > 0 ? Number(fin.valor) : 0;
             const tipoValido = fin && (fin.tipo === 'entrada' || fin.tipo === 'saida') ? fin.tipo : '';
             if (atividade !== '' || valorNum > 0) {
-                itensDoDia.push({ hora: formatarHora(hIndex), atividade: (atividade || 'Lançamento financeiro') + (valorNum > 0 && fin.categoria ? ` (${fin.categoria})` : ''), tipo: valorNum > 0 ? tipoValido : '', valor: valorNum });
+                itensDoDia.push({ hora: formatarHora(hIndex), atividade: (atividade || 'Lançamento financeiro') + (valorNum > 0 ? ` (${ext('categoriaDe', atividade, fin) || 'Outros'})` : ''), tipo: valorNum > 0 ? tipoValido : '', valor: valorNum });
             }
         }
         dias.push({ itens: itensDoDia });
