@@ -1,1461 +1,421 @@
-// =====================================================
-// PlaniFy - script.js (Firebase Authentication + Firestore)
-// =====================================================
+/* =====================================================
+   PlaniFy - extras.css (carregue DEPOIS do style.css)
+   ===================================================== */
 
-// Referências das Telas
-const telaInicial = document.getElementById('tela-inicial');
-const telaLogado = document.getElementById('tela-logado');
+/* ---------- Layout com mais abas ---------- */
+.topo-logado { flex-wrap: wrap; gap: 10px; }
+.abas-navegacao { flex-wrap: wrap; }
 
-// Referências dos Modais
-const modalCadastro = document.getElementById('modal-cadastro');
-const modalLogin = document.getElementById('modal-login');
-const modalConfig = document.getElementById('modal-config');
+/* ---------- Hora atual na grade ---------- */
+.tabela-agenda tr.linha-hora-atual td { box-shadow: inset 0 2px 0 rgba(46, 204, 113, 0.55), inset 0 -2px 0 rgba(46, 204, 113, 0.55); }
+.tabela-agenda tr.linha-hora-atual td.coluna-horario { background: #2ecc71; color: #122418; }
 
-// Botões do Header Inicial
-const btnCadastroHeader = document.getElementById('btn-cadastro-header');
-const btnLoginHeader = document.getElementById('btn-login-header');
+/* ---------- Botões de ação da agenda ---------- */
+.agenda-acoes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 
-// Botões de Fechar Modal
-const fecharCadastro = document.getElementById('fechar-cadastro');
-const fecharLogin = document.getElementById('fechar-login');
+.btn-agenda-acao {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #ffffff;
+    background: transparent;
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-agenda-acao:hover { background: rgba(255, 255, 255, 0.15); }
 
-// Formulários
-const formCadastro = document.getElementById('form-cadastro');
-const formLogin = document.getElementById('form-login');
+.seletor-categoria {
+    background: #122418;
+    color: #ffffff;
+    border: 1px solid #2a4d34;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+}
 
-// Menu Hambúrguer e Opções
-const btnMenuHamburguer = document.getElementById('btn-menu-hamburguer');
-const dropdownMenu = document.getElementById('dropdown-menu');
-const btnTrocarConta = document.getElementById('btn-trocar-conta');
-const btnConfiguracoes = document.getElementById('btn-configuracoes');
-const btnDesconectar = document.getElementById('btn-desconectar');
-const btnPainelAdmin = document.getElementById('btn-painel-admin');
-const btnSuporte = document.getElementById('btn-suporte');
-const abaBtnAdmin = document.getElementById('aba-btn-admin');
+.btn-principal {
+    width: 100%;
+    padding: 12px;
+    background-color: #ffffff;
+    color: #1b3323;
+    border: none;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 5px;
+    transition: opacity 0.2s;
+}
+.btn-principal:hover { opacity: 0.9; }
 
-// --- ESTADO DA SESSÃO (controlado pelo Firebase Authentication) ---
-let usuarioUid = '';
-let usuarioLogadoEmail = '';
-let usuarioLogadoNome = '';
-let usuarioEhAdmin = false;
-let cadastroEmAndamento = false;
-let excluindoConta = false;
-let intervaloLembretes = null;
-let notifsPessoais = []; // avisos dos lembretes de pagamento (ficam salvos na conta)
+#aba-metas h2 { color: #ffffff; text-align: center; margin-bottom: 20px; }
 
-// Ponte para os recursos extras (extras.js): se o arquivo não carregar, o site segue funcionando
-function ext(nome, ...args) {
-    const api = window.PlanifyExtras;
-    if (api && typeof api[nome] === 'function') {
-        try { return api[nome](...args); } catch (erro) { console.error('Extras (' + nome + '):', erro); }
+/* ---------- Barra de progresso (orçamento, gráfico e metas) ---------- */
+.barra-progresso { width: 100%; height: 12px; background: rgba(255, 255, 255, 0.12); border-radius: 999px; overflow: hidden; }
+.barra-progresso > div, #orcamento-barra { height: 100%; width: 0; border-radius: 999px; background: #2ecc71; transition: width 0.5s ease, background 0.3s ease; }
+
+.orcamento-bloco, .grafico-bloco {
+    background-color: #1b3323;
+    border: 1px solid #2a4d34;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 18px;
+}
+.orcamento-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.orcamento-topo strong, .grafico-bloco > strong { color: #ffffff; }
+#form-orcamento { display: flex; gap: 8px; flex-wrap: wrap; }
+#form-orcamento input { padding: 8px; width: 160px; background: rgba(255, 255, 255, 0.08); border: 1px solid #2a4d34; border-radius: 4px; color: #ffffff; }
+#form-orcamento button { padding: 8px 12px; background: #ffffff; color: #1b3323; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px; }
+#orcamento-texto { margin-top: 10px; font-size: 13px; color: #cfe3d7; line-height: 1.5; }
+
+.grafico-bloco > strong { display: block; margin-bottom: 10px; }
+.grafico-linha { display: grid; grid-template-columns: 140px 1fr 120px; gap: 10px; align-items: center; margin: 9px 0; font-size: 13px; color: #cfe3d7; }
+.grafico-valor { text-align: right; color: #ffffff; font-weight: bold; }
+.grafico-legenda { font-size: 12px; color: #a3c1ad; line-height: 1.5; margin-bottom: 10px; }
+.vazio-extra { text-align: center; color: #a3c1ad; padding: 10px; font-size: 13px; }
+
+@media (max-width: 600px) {
+    .grafico-linha { grid-template-columns: 1fr 1fr; }
+    .grafico-linha .barra-progresso { grid-column: 1 / -1; order: 3; }
+    .grafico-valor { grid-column: 2; grid-row: 1; }
+}
+
+/* ---------- Metas ---------- */
+.meta-card { background-color: #1b3323; border: 1px solid #2a4d34; border-left: 4px solid #8fc7a8; border-radius: 8px; padding: 14px; }
+.meta-card.meta-atingida { border-left-color: #2ecc71; }
+.meta-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.meta-topo h4 { color: #ffffff; margin: 0; }
+.meta-valores { margin-top: 8px; font-size: 14px; font-weight: bold; color: #ffffff; }
+.meta-info { margin-top: 4px; font-size: 12px; color: #a3c1ad; line-height: 1.5; }
+.meta-acoes { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.meta-acoes input { flex: 1; min-width: 100px; padding: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid #2a4d34; border-radius: 4px; color: #ffffff; }
+.meta-acoes button { padding: 8px 10px; background: #ffffff; color: #1b3323; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+
+/* ---------- Dica do dia ---------- */
+.dica-card {
+    max-width: 520px;
+    margin: 22px auto 0;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid #2a4d34;
+    border-left: 4px solid #f1c40f;
+    border-radius: 10px;
+    padding: 14px 16px;
+}
+.dica-cabecalho { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; }
+.dica-cabecalho strong { font-size: 14px; color: #ffffff; }
+.dica-cabecalho button { background: none; border: 1px solid #a3c1ad; color: #a3c1ad; border-radius: 4px; padding: 3px 8px; font-size: 12px; cursor: pointer; }
+.dica-cabecalho button:hover { color: #ffffff; border-color: #ffffff; }
+#dica-texto { font-size: 14px; line-height: 1.6; color: #cfe3d7; }
+
+/* ---------- Atividade repetida ---------- */
+.rep-dias { display: flex; flex-wrap: wrap; gap: 8px; }
+.rep-dias label { display: flex; align-items: center; gap: 4px; font-size: 13px; background: rgba(255, 255, 255, 0.08); padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+.rep-dias input { padding: 0; margin: 0; }
+.rep-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #cfe3d7; }
+.rep-label input[type="number"] { width: 70px; }
+
+/* ---------- Configurações com abas ---------- */
+.cfg-abas { display: flex; gap: 6px; margin: 12px 0 4px; flex-wrap: wrap; }
+.modal-conteudo .cfg-aba { flex: 1; min-width: 100px; padding: 8px 6px; background: transparent; color: #cfe3d7; border: 1px solid #2a4d34; font-size: 13px; }
+.modal-conteudo .cfg-aba.ativa { background: #ffffff; color: #1b3323; border-color: #ffffff; }
+.cfg-painel { display: none; }
+.cfg-painel.ativo { display: block; }
+.tema-opcoes { display: flex; gap: 10px; margin-top: 10px; }
+.modal-conteudo .tema-opcoes button { flex: 1; background: transparent; color: #ffffff; border: 2px solid #2a4d34; padding: 14px 6px; font-size: 14px; }
+.modal-conteudo .tema-opcoes button.ativo { border-color: #2ecc71; background: rgba(46, 204, 113, 0.15); }
+
+/* ---------- Admin: lista de avisos ---------- */
+.admin-lista-avisos { max-height: 260px; overflow-y: auto; }
+.admin-aviso-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 10px; background: #1b3323; border: 1px solid #2a4d34; border-radius: 6px; margin-bottom: 8px; }
+.admin-aviso-texto { display: flex; flex-direction: column; gap: 3px; font-size: 13px; min-width: 0; }
+.admin-aviso-texto strong { color: #ffffff; }
+.admin-aviso-texto span { color: #cfe3d7; word-break: break-word; }
+.admin-aviso-texto small { color: #a3c1ad; }
+.admin-aviso-item button { padding: 4px 10px; background: #e74c3c; color: #ffffff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; flex-shrink: 0; }
+
+/* =====================================================
+   TEMA CLARO (vale só para a área logada e os modais dela)
+   ===================================================== */
+html[data-tema="claro"] #tela-logado { background: #eef5f0; color: #12261b; }
+
+html[data-tema="claro"] #tela-logado :is(h1, h2, h3, h4, .semana-titulo, .calendario-dia, .btn-aba, .meta-topo h4, .meta-valores, .dica-cabecalho strong, .orcamento-topo strong, .grafico-bloco > strong, .grafico-valor, .admin-aviso-texto strong, .notif-cabecalho h4, .item-notificacao strong, .info-lembrete h4, .calendario-cabecalho h3) { color: #12261b; }
+
+html[data-tema="claro"] #tela-logado :is(.subtitulo-logado, .semana-sub, .data-cabecalho, .card-metrica span, .campo-grupo label, .info-lembrete p, .notif-vazia, .atividade-info-financeiro, .calendario-legenda, .calendario-dias-semana span, .nota-status, .previa-cabecalho, .item-notificacao span, .meta-info, .vazio-extra, #orcamento-texto, #dica-texto, .grafico-linha, .grafico-legenda, .admin-aviso-texto span, .admin-aviso-texto small, .rep-label) { color: #4f6b5a; }
+
+html[data-tema="claro"] #tela-logado :is(.resumo-semanal-card, .card-lembrete-form, .card-lembretes-lista, .painel-calendario, .painel-previa-nota, .alternador-visao, .seletor-tipo-transacao) { background: #ffffff; border-color: #c8dccf; color: #12261b; box-shadow: 0 2px 8px rgba(18, 38, 27, 0.08); }
+
+html[data-tema="claro"] #tela-logado :is(.card-metrica, .orcamento-bloco, .grafico-bloco, .meta-card, .card-item-lembrete, .admin-aviso-item) { background: #f3f8f5; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .meta-card { border-left-color: #1b382b; }
+html[data-tema="claro"] #tela-logado .meta-card.meta-atingida { border-left-color: #2ecc71; }
+html[data-tema="claro"] #tela-logado .card-item-lembrete { border-left-color: #1b382b; }
+html[data-tema="claro"] #tela-logado .card-item-lembrete.disparado { border-left-color: #e74c3c; background: rgba(231, 76, 60, 0.08); }
+html[data-tema="claro"] #tela-logado .card-item-lembrete.pago { border-left-color: #2ecc71; }
+html[data-tema="claro"] #tela-logado .dica-card { background: #ffffff; border-color: #c8dccf; border-left-color: #f1c40f; }
+html[data-tema="claro"] #tela-logado .barra-progresso { background: rgba(18, 38, 27, 0.12); }
+
+/* tabelas */
+html[data-tema="claro"] #tela-logado .tabela-agenda { background: #ffffff; color: #12261b; }
+html[data-tema="claro"] #tela-logado .tabela-agenda :is(th, td) { border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .tabela-agenda th { background: #dcebe1; color: #12261b; }
+html[data-tema="claro"] #tela-logado .coluna-horario { background: #dcebe1; color: #12261b; }
+html[data-tema="claro"] #tela-logado .celula-agenda { background: rgba(27, 56, 43, 0.03); }
+html[data-tema="claro"] #tela-logado .celula-agenda:focus { background: rgba(27, 56, 43, 0.1); border-color: #1b382b; }
+html[data-tema="claro"] #tela-logado .tabela-agenda td.coluna-hoje, html[data-tema="claro"] #tela-logado .celula-agenda.coluna-hoje:not(:focus) { background: rgba(46, 204, 113, 0.13); }
+html[data-tema="claro"] #tela-logado .tabela-agenda th.coluna-hoje-cabecalho { box-shadow: inset 0 -3px 0 #1b382b; }
+html[data-tema="claro"] #tela-logado .tabela-agenda tr.linha-hora-atual td.coluna-horario { background: #2ecc71; color: #122418; }
+html[data-tema="claro"] #tela-logado .input-valor-financeiro { background: #ffffff; color: #12261b; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .item-transacao-detalhe { border-bottom-color: #dcebe1; }
+html[data-tema="claro"] #tela-logado .balanco-geral h3 { color: #12261b !important; }
+html[data-tema="claro"] #tela-logado .total-entradas h3 { color: #1e8449 !important; }
+html[data-tema="claro"] #tela-logado .total-saidas h3 { color: #c0392b !important; }
+
+/* botões */
+html[data-tema="claro"] #tela-logado :is(.btn-hamburguer, .btn-sininho) { border: 1px solid #c8dccf; }
+html[data-tema="claro"] #tela-logado .btn-aba:hover { background: rgba(27, 56, 43, 0.08); color: #12261b; }
+html[data-tema="claro"] #tela-logado .btn-aba.ativa { background: #1b382b; color: #ffffff; }
+html[data-tema="claro"] #tela-logado :is(.btn-tipo-transacao, .btn-visao, .btn-modo-agenda) { color: #12261b; }
+html[data-tema="claro"] #tela-logado :is(.btn-visao.ativa, .btn-modo-agenda.ativa) { background: #1b382b; color: #ffffff; }
+html[data-tema="claro"] #tela-logado .btn-tipo-transacao.ativa.btn-entrada { background: #2ecc71; color: #122418; }
+html[data-tema="claro"] #tela-logado .btn-tipo-transacao.ativa.btn-saida { background: #e74c3c; color: #ffffff; }
+html[data-tema="claro"] #tela-logado .btn-nav-semana { background: #ffffff; border-color: #c8dccf; color: #12261b; }
+html[data-tema="claro"] #tela-logado .btn-nav-semana:hover { background: #dcebe1; }
+html[data-tema="claro"] #tela-logado :is(.btn-hoje, .btn-agenda-acao, .btn-nota-secundario) { border-color: #1b382b; color: #1b382b; }
+html[data-tema="claro"] #tela-logado :is(.btn-hoje:hover, .btn-agenda-acao:hover, .btn-nota-secundario:hover) { background: #1b382b; color: #ffffff; }
+html[data-tema="claro"] #tela-logado :is(.btn-nota-primario, #btn-salvar-lembrete, .btn-principal, #form-orcamento button, .meta-acoes button) { background: #1b382b; color: #ffffff; border-color: #1b382b; }
+html[data-tema="claro"] #tela-logado .btn-notificacao { background: #ffffff; color: #12261b; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .seletor-categoria { background: #ffffff; color: #12261b; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .dica-cabecalho button { color: #4f6b5a; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .calendario-dia.hoje span { background: #1b382b; color: #ffffff; }
+html[data-tema="claro"] #tela-logado .calendario-semana:hover { background: rgba(27, 56, 43, 0.07); }
+html[data-tema="claro"] #tela-logado .calendario-semana.selecionada { background: rgba(27, 56, 43, 0.1); border-color: #1b382b; }
+
+/* campos */
+html[data-tema="claro"] #tela-logado :is(.campo-grupo input, #form-orcamento input, .meta-acoes input) { background: #ffffff; color: #12261b; border-color: #c8dccf; }
+
+/* menus e notificações */
+html[data-tema="claro"] #tela-logado .dropdown-conteudo { background: #ffffff; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .dropdown-conteudo button { color: #12261b; }
+html[data-tema="claro"] #tela-logado .dropdown-conteudo button:hover { background: rgba(27, 56, 43, 0.08); }
+html[data-tema="claro"] #tela-logado .dropdown-conteudo .btn-sair { color: #c0392b; }
+html[data-tema="claro"] #tela-logado .notif-cabecalho { background: #eef5f0; border-bottom-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .notif-cabecalho button { color: #4f6b5a; }
+html[data-tema="claro"] #tela-logado .item-notificacao { background: rgba(27, 56, 43, 0.05); border-left-color: #1b382b; }
+html[data-tema="claro"] #tela-logado .item-notificacao.alerta-pagamento { background: rgba(231, 76, 60, 0.1); border-left-color: #e74c3c; }
+html[data-tema="claro"] #tela-logado .menu-formatos { background: #ffffff; border-color: #c8dccf; }
+html[data-tema="claro"] #tela-logado .menu-formatos button { color: #12261b; }
+html[data-tema="claro"] #tela-logado .menu-formatos button:hover { background: rgba(27, 56, 43, 0.08); }
+html[data-tema="claro"] #tela-logado .menu-formatos small { color: #4f6b5a; }
+
+/* painel admin (tem estilos inline, por isso o !important) */
+html[data-tema="claro"] #aba-admin :is(input, textarea) { background: #ffffff !important; color: #12261b !important; border-color: #c8dccf !important; }
+html[data-tema="claro"] #btn-admin-backup { background: #1b382b !important; color: #ffffff !important; }
+
+/* janelas (configurações e atividade repetida) */
+html[data-tema="claro"] :is(#modal-config, #modal-repetir) .modal-conteudo { background: #ffffff; color: #12261b; box-shadow: 0 4px 16px rgba(18, 38, 27, 0.25); }
+html[data-tema="claro"] :is(#modal-config, #modal-repetir) :is(.fechar, h2, h3) { color: #12261b; }
+html[data-tema="claro"] :is(#modal-config, #modal-repetir) :is(.cfg-email, .cfg-ajuda, .rep-label) { color: #4f6b5a; }
+html[data-tema="claro"] :is(#modal-config, #modal-repetir) input:not([type="checkbox"]) { border: 1px solid #c8dccf; background: #ffffff; color: #12261b; }
+html[data-tema="claro"] :is(#modal-config, #modal-repetir) .cfg-secao { border-top-color: #c8dccf; }
+html[data-tema="claro"] #modal-config .cfg-aba { color: #12261b; border-color: #c8dccf; }
+html[data-tema="claro"] #modal-config .cfg-aba.ativa { background: #1b382b; color: #ffffff; border-color: #1b382b; }
+html[data-tema="claro"] #modal-config .tema-opcoes button { color: #12261b; border-color: #c8dccf; }
+html[data-tema="claro"] #modal-config .tema-opcoes button.ativo { border-color: #1b382b; background: rgba(27, 56, 43, 0.1); }
+html[data-tema="claro"] :is(#modal-config, #modal-repetir) form button[type="submit"]:not(.btn-perigo) { background: #1b382b; color: #ffffff; }
+html[data-tema="claro"] #modal-repetir .rep-dias label { background: #eef5f0; }
+html[data-tema="claro"] #modal-repetir .seletor-categoria { background: #ffffff; color: #12261b; border-color: #c8dccf; }
+
+/* aviso na tela (toast): mantém o visual escuro nos dois temas */
+.toast-planify { max-width: 320px; }
+
+/* =====================================================
+   CELULAR (telas de até 600px) - o PC não muda
+   ===================================================== */
+@media (max-width: 600px) {
+    html { -webkit-text-size-adjust: 100%; }
+
+    /* ---------- Cabeçalho da área logada ---------- */
+    .topo-logado { padding: 10px 12px; gap: 8px; }
+    .controles-topo-direito { order: 1; margin-left: auto; gap: 8px; }
+    .abas-navegacao {
+        order: 2; width: 100%; flex-wrap: nowrap; gap: 6px; padding-bottom: 4px;
+        overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
     }
-    return undefined;
-}
+    .abas-navegacao::-webkit-scrollbar { display: none; }
+    .btn-aba { flex: 0 0 auto; white-space: nowrap; padding: 8px 12px; font-size: 14px; }
+    .btn-hamburguer, .btn-sininho { min-width: 42px; min-height: 40px; }
+    .dropdown-notif { width: min(280px, calc(100vw - 80px)); }
 
-// O botão "Painel Admin" do menu só aparece para administradores
-if (btnPainelAdmin) btnPainelAdmin.style.display = 'none';
+    /* ---------- Conteúdo ---------- */
+    .conteudo-principal-logado { padding: 12px 8px; }
+    .conteudo-aba h2 { font-size: 1.2rem; }
+    .imagem-capivara-boas-vindas { width: 200px; height: 200px; max-width: 60vw; max-height: 60vw; }
+    #boas-vindas-titulo { font-size: 1.6rem; }
+    .subtitulo-logado { font-size: 1rem; }
+    .dica-card { margin-top: 16px; }
 
-// --- LÓGICA DO SININHO E CENTRAL DE NOTIFICAÇÕES ---
-const btnSininho = document.getElementById('btn-sininho');
-const dropdownNotificacoes = document.getElementById('dropdown-notificacoes');
-const badgeNotificacao = document.getElementById('badge-notificacao');
-const listaNotificacoes = document.getElementById('lista-notificacoes');
-const btnLimparNotifs = document.getElementById('btn-limpar-notifs');
+    /* ---------- Controles (agenda e financeiro) ---------- */
+    .agenda-controles, .controles-financeiros { gap: 10px; width: 100%; }
+    .navegador-semana { width: 100%; gap: 8px; }
+    .semana-info { min-width: 0; flex: 1 1 140px; text-align: center; }
+    .semana-titulo { font-size: 14px; text-align: center; }
+    .btn-hoje { padding: 6px 10px; }
+    .alternador-visao, .seletor-tipo-transacao { width: 100%; }
+    .btn-modo-agenda, .btn-visao, .btn-tipo-transacao { flex: 1; padding: 10px 6px; font-size: 13px; }
+    .agenda-acoes { width: 100%; }
+    .btn-agenda-acao { flex: 1 1 140px; padding: 10px 8px; }
+    .acoes-nota { width: 100%; }
+    .acoes-nota-botoes { width: 100%; flex-wrap: wrap; }
+    .btn-nota-secundario { flex: 1 1 140px; padding: 10px 8px; }
+    .menu-download { flex: 1 1 140px; display: block; }
+    .btn-nota-primario { width: 100%; padding: 10px 8px; }
+    .menu-formatos { position: fixed; left: 12px; right: 12px; top: auto; bottom: 16px; min-width: 0; z-index: 40; }
+    .nota-status { text-align: center; }
+    #iframe-previa-nota { height: 420px; }
+    .painel-previa-nota { padding: 8px; }
 
-let listaHistoricoNotifs = [];
-
-if (btnSininho) {
-    btnSininho.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (dropdownMenu) dropdownMenu.classList.remove('mostrar');
-        dropdownNotificacoes.classList.toggle('mostrar');
-        marcarNotificacoesComoLidas();
-    });
-}
-
-if (btnLimparNotifs) {
-    btnLimparNotifs.addEventListener('click', () => {
-        marcarNotificacoesComoLidas();
-        // avisos globais: ficam ocultos só para esta conta; lembretes: apagados
-        const ocultas = new Set(lerListaLocal(chaveOcultas()));
-        listaHistoricoNotifs.forEach(n => ocultas.add('g-' + n.id));
-        localStorage.setItem(chaveOcultas(), JSON.stringify([...ocultas]));
-        notifsPessoais = [];
-        sincronizarDadosComNuvem();
-        renderizarPainelNotificacoes();
-    });
-}
-
-// Escuta em tempo real: qualquer aviso novo aparece no sininho na hora, sem recarregar
-let cancelarEscutaAvisos = null;
-
-function iniciarEscutaDeAvisos() {
-    if (!window.firebaseDB || cancelarEscutaAvisos) return;
-    const { db, collection, onSnapshot } = window.firebaseDB;
-
-    cancelarEscutaAvisos = onSnapshot(
-        collection(db, "avisos_globais"),
-        (snapshot) => {
-            const avisosNuvem = [];
-            snapshot.forEach((docSnap) => {
-                avisosNuvem.push({ id: docSnap.id, ...docSnap.data() });
-            });
-            avisosNuvem.sort((a, b) => b.timestamp - a.timestamp);
-            listaHistoricoNotifs = avisosNuvem;
-            renderizarPainelNotificacoes();
-            ext('aoAvisosAtualizados');
-        },
-        (erro) => {
-            console.error("Erro ao escutar avisos:", erro);
-        }
-    );
-}
-
-function pararEscutaDeAvisos() {
-    if (cancelarEscutaAvisos) {
-        cancelarEscutaAvisos();
-        cancelarEscutaAvisos = null;
+    /* ---------- Tabelas: rola de lado e a coluna de horário fica fixa ---------- */
+    .tabela-container { max-width: 100%; max-height: 70vh; border-radius: 6px; -webkit-overflow-scrolling: touch; }
+    .tabela-agenda { font-size: 12px; }
+    .tabela-agenda th, .tabela-agenda td { min-width: 108px; padding: 6px 4px; }
+    :is(#aba-organizacao, #visao-grade-financeira) .tabela-agenda th:first-child,
+    :is(#aba-organizacao, #visao-grade-financeira) .tabela-agenda td.coluna-horario,
+    #visao-grade-financeira .tabela-agenda tfoot td:first-child {
+        position: sticky; left: 0; min-width: 58px; width: 58px; box-shadow: inset -1px 0 0 #2a4d34; z-index: 1;
     }
-}
-
-function chaveLidas() { return `planify_notifs_lidas_${usuarioUid}`; }
-function chaveOcultas() { return `planify_notifs_ocultas_${usuarioUid}`; }
-
-function lerListaLocal(chave) {
-    try { return JSON.parse(localStorage.getItem(chave) || '[]'); } catch (e) { return []; }
-}
-
-// Junta lembretes (pessoais) e avisos globais numa lista só, do mais novo para o mais antigo
-function obterNotificacoesVisiveis() {
-    const ocultas = lerListaLocal(chaveOcultas());
-
-    const globais = listaHistoricoNotifs
-        .filter(n => !ocultas.includes('g-' + n.id))
-        .map(n => ({
-            chave: 'g-' + n.id,
-            tipo: 'global',
-            titulo: n.titulo,
-            texto: `${n.mensagem || n.valor || ''}${n.horario ? ' — ' + n.horario : ''}`,
-            timestamp: Number(n.timestamp) || 0
-        }));
-
-    const pessoais = notifsPessoais.map(n => ({
-        chave: 'l-' + n.id,
-        tipo: 'lembrete',
-        titulo: n.titulo,
-        texto: n.texto,
-        timestamp: Number(n.timestamp) || 0
-    }));
-
-    return [...pessoais, ...globais].sort((a, b) => b.timestamp - a.timestamp);
-}
-
-function renderizarPainelNotificacoes() {
-    if (!listaNotificacoes) return;
-    listaNotificacoes.innerHTML = '';
-
-    const visiveis = obterNotificacoesVisiveis();
-    const lidas = lerListaLocal(chaveLidas());
-    const naoLidas = visiveis.filter(n => !lidas.includes(n.chave)).length;
-
-    if (badgeNotificacao) {
-        if (naoLidas > 0) {
-            badgeNotificacao.textContent = naoLidas;
-            badgeNotificacao.classList.remove('oculta');
-        } else {
-            badgeNotificacao.classList.add('oculta');
-        }
-    }
-
-    if (visiveis.length === 0) {
-        listaNotificacoes.innerHTML = '<p class="notif-vazia">Nenhuma notificação nova</p>';
-        return;
-    }
-
-    visiveis.forEach(notif => {
-        const item = document.createElement('div');
-        item.classList.add('item-notificacao', 'alerta-pagamento');
-        const icone = notif.tipo === 'lembrete' ? '⏰ Hora de pagar:' : '📢';
-        item.innerHTML = `
-            <strong>${icone} ${escapeXML(notif.titulo)}</strong>
-            <span>${escapeXML(notif.texto)}</span>
-        `;
-        listaNotificacoes.appendChild(item);
-    });
-}
-
-function marcarNotificacoesComoLidas() {
-    const lidas = new Set(lerListaLocal(chaveLidas()));
-    obterNotificacoesVisiveis().forEach(n => lidas.add(n.chave));
-    localStorage.setItem(chaveLidas(), JSON.stringify([...lidas]));
-    if (badgeNotificacao) badgeNotificacao.classList.add('oculta');
-}
-
-const boasVindasTitulo = document.getElementById('boas-vindas-titulo');
-
-// --- ESTADO GLOBAL DA APLICAÇÃO ---
-let tipoTransacaoAtual = 'entrada';
-const diasDaSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
-const diasAbreviados = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-const nomesDosMeses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-
-// 24 horas: de 00:00 até 23:00
-const HORA_INICIAL = 0;
-const TOTAL_HORAS = 24;
-
-function formatarHora(hIndex) {
-    return `${String(hIndex + HORA_INICIAL).padStart(2, '0')}:00`;
-}
-
-function adicionarDias(data, quantidade) {
-    return new Date(data.getFullYear(), data.getMonth(), data.getDate() + quantidade);
-}
-
-function inicioDaSemana(data) {
-    const deslocamento = (data.getDay() + 6) % 7;
-    return adicionarDias(data, -deslocamento);
-}
-
-function chaveDia(data) {
-    const ano = data.getFullYear();
-    const mes = String(data.getMonth() + 1).padStart(2, '0');
-    const dia = String(data.getDate()).padStart(2, '0');
-    return `${ano}-${mes}-${dia}`;
-}
-
-function mesmoDia(a, b) {
-    return chaveDia(a) === chaveDia(b);
-}
-
-function formatarDataCurta(data) {
-    return `${String(data.getDate()).padStart(2, '0')}/${String(data.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function formatarDataCompleta(data) {
-    return `${formatarDataCurta(data)}/${data.getFullYear()}`;
-}
-
-let semanaSelecionada = inicioDaSemana(new Date());
-let mesExibido = mesDaSemana(semanaSelecionada);
-let modoAgenda = 'semanal';
-
-function mesDaSemana(inicioSemana) {
-    const quinta = adicionarDias(inicioSemana, 3);
-    return new Date(quinta.getFullYear(), quinta.getMonth(), 1);
-}
-
-// --- DADOS NA NUVEM (FIRESTORE) - um documento por usuário, identificado pelo UID ---
-let agendaPorSemana = {};
-let financeiroPorSemana = {};
-let listaLembretes = [];
-
-async function carregarDadosDoUsuarioDaNuvem() {
-    if (!window.firebaseDB || !usuarioUid) return;
-    const { db, doc, getDoc } = window.firebaseDB;
-
-    try {
-        const docSnap = await getDoc(doc(db, "dados_usuarios", usuarioUid));
-        if (docSnap.exists()) {
-            const dados = docSnap.data();
-            agendaPorSemana = dados.agenda || {};
-            financeiroPorSemana = dados.financeiro || {};
-            listaLembretes = dados.lembretes || [];
-            notifsPessoais = dados.notificacoes || [];
-        } else {
-            agendaPorSemana = {};
-            financeiroPorSemana = {};
-            listaLembretes = [];
-            notifsPessoais = [];
-        }
-        ext('aoCarregarDados', docSnap.exists() ? docSnap.data() : null);
-        renderizarSemana();
-        renderizarLembretes();
-        renderizarPainelNotificacoes();
-    } catch (erro) {
-        console.error("Erro ao carregar dados do utilizador:", erro);
-    }
-}
-
-function contarRegistros() {
-    let total = 0;
-    Object.values(agendaPorSemana).forEach(sem => { total += Object.keys(sem).length; });
-    Object.values(financeiroPorSemana).forEach(sem => { total += Object.keys(sem).length; });
-    return total;
-}
-
-async function sincronizarAgora() {
-    if (!window.firebaseDB || !usuarioUid || excluindoConta) return;
-    const { db, doc, setDoc } = window.firebaseDB;
-    try {
-        await setDoc(doc(db, "dados_usuarios", usuarioUid), {
-            agenda: agendaPorSemana,
-            financeiro: financeiroPorSemana,
-            lembretes: listaLembretes,
-            notificacoes: notifsPessoais,
-            ...(ext('payload') || {}),
-            ultimaAtualizacao: new Date().toISOString()
-        });
-        // Perfil: guarda apenas CONTADORES (o admin nunca vê o conteúdo)
-        await setDoc(doc(db, "usuarios", usuarioUid), {
-            totalRegistros: contarRegistros(),
-            ultimoAcesso: Date.now()
-        }, { merge: true });
-    } catch (erro) {
-        console.error("Erro ao guardar na nuvem:", erro);
-    }
-}
-
-let timeoutSalvarNuvem = null;
-function sincronizarDadosComNuvem() {
-    if (!window.firebaseDB || !usuarioUid) return;
-    clearTimeout(timeoutSalvarNuvem);
-    timeoutSalvarNuvem = setTimeout(sincronizarAgora, 600);
-}
-
-function textoAgenda(chaveSemana, hIndex, diaIndex) {
-    const semana = agendaPorSemana[chaveSemana];
-    return (semana && semana[`${hIndex}-${diaIndex}`]) || '';
-}
-
-function salvarTextoAgenda(hIndex, diaIndex, texto) {
-    const chave = chaveDia(semanaSelecionada);
-    const campo = `${hIndex}-${diaIndex}`;
-
-    if (texto) {
-        if (!agendaPorSemana[chave]) agendaPorSemana[chave] = {};
-        agendaPorSemana[chave][campo] = texto;
-    } else if (agendaPorSemana[chave]) {
-        delete agendaPorSemana[chave][campo];
-        if (Object.keys(agendaPorSemana[chave]).length === 0) delete agendaPorSemana[chave];
-    }
-    sincronizarDadosComNuvem();
-}
-
-function itemFinanceiro(chaveSemana, hIndex, diaIndex) {
-    const semana = financeiroPorSemana[chaveSemana];
-    return (semana && semana[`${hIndex}-${diaIndex}`]) || { valor: 0, tipo: 'entrada' };
-}
-
-// --- MODAIS DE CADASTRO E LOGIN ---
-if (btnCadastroHeader) btnCadastroHeader.addEventListener('click', () => modalCadastro.style.display = 'block');
-if (btnLoginHeader) btnLoginHeader.addEventListener('click', () => modalLogin.style.display = 'block');
-if (fecharCadastro) fecharCadastro.addEventListener('click', () => modalCadastro.style.display = 'none');
-if (fecharLogin) fecharLogin.addEventListener('click', () => modalLogin.style.display = 'none');
-
-window.addEventListener('click', (event) => {
-    if (event.target === modalCadastro) modalCadastro.style.display = 'none';
-    if (event.target === modalLogin) modalLogin.style.display = 'none';
-    if (event.target === modalConfig) modalConfig.style.display = 'none';
-});
-
-function traduzirErroAuth(erro) {
-    switch (erro && erro.code) {
-        case 'auth/email-already-in-use': return 'Este e-mail já está cadastrado.';
-        case 'auth/invalid-email': return 'E-mail inválido.';
-        case 'auth/weak-password': return 'Senha fraca: use pelo menos 6 caracteres.';
-        case 'auth/invalid-credential':
-        case 'auth/wrong-password':
-        case 'auth/user-not-found': return 'E-mail ou senha incorretos.';
-        case 'auth/too-many-requests': return 'Muitas tentativas. Aguarde alguns minutos e tente de novo.';
-        case 'auth/network-request-failed': return 'Sem conexão com a internet.';
-        case 'auth/operation-not-allowed': return 'Login por e-mail/senha não está ativado no Firebase.';
-        case 'auth/requires-recent-login': return 'Por segurança, saia e entre novamente antes de fazer isso.';
-        case 'auth/missing-password': return 'Digite a senha.';
-        default: return (erro && erro.message) || 'Erro desconhecido.';
-    }
-}
-
-// --- CADASTRO (Firebase Authentication) ---
-if (formCadastro) {
-    formCadastro.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!window.firebaseDB) return alert("Aguardando ligação com a nuvem...");
-
-        const usuario = document.getElementById('cad-usuario').value.trim();
-        const email = document.getElementById('cad-email').value.trim().toLowerCase();
-        const senha = document.getElementById('cad-senha').value;
-
-        if (senha.length < 6) return alert('A senha precisa ter pelo menos 6 caracteres.');
-
-        const { auth, db, doc, setDoc, createUserWithEmailAndPassword, updateProfile } = window.firebaseDB;
-        cadastroEmAndamento = true;
-        try {
-            const cred = await createUserWithEmailAndPassword(auth, email, senha);
-            await updateProfile(cred.user, { displayName: usuario });
-            // Perfil SEM senha: a senha fica só no Firebase Authentication (com hash)
-            await setDoc(doc(db, "usuarios", cred.user.uid), {
-                usuario,
-                email,
-                criadoEm: new Date().toISOString(),
-                ultimoAcesso: Date.now(),
-                totalRegistros: 0
-            });
-
-            formCadastro.reset();
-            modalCadastro.style.display = 'none';
-            cadastroEmAndamento = false;
-            await iniciarSessao(cred.user);
-        } catch (erro) {
-            cadastroEmAndamento = false;
-            alert('Erro ao cadastrar: ' + traduzirErroAuth(erro));
-        }
-    });
-}
-
-// --- LOGIN (Firebase Authentication) ---
-if (formLogin) {
-    formLogin.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!window.firebaseDB) return alert("Aguardando ligação com a nuvem...");
-
-        const email = document.getElementById('login-email').value.trim().toLowerCase();
-        const senha = document.getElementById('login-senha').value;
-        const { auth, signInWithEmailAndPassword } = window.firebaseDB;
-
-        try {
-            await signInWithEmailAndPassword(auth, email, senha);
-            formLogin.reset();
-            modalLogin.style.display = 'none';
-            // O restante acontece no onAuthStateChanged
-        } catch (erro) {
-            alert('Erro ao entrar: ' + traduzirErroAuth(erro));
-        }
-    });
-}
-
-// --- ESQUECI MINHA SENHA ---
-const btnEsqueciSenha = document.getElementById('btn-esqueci-senha');
-if (btnEsqueciSenha) {
-    btnEsqueciSenha.addEventListener('click', async () => {
-        if (!window.firebaseDB) return alert("Aguardando ligação com a nuvem...");
-
-        let email = document.getElementById('login-email').value.trim().toLowerCase();
-        if (!email) email = (prompt('Digite o e-mail da sua conta:') || '').trim().toLowerCase();
-        if (!email) return;
-
-        const { auth, sendPasswordResetEmail } = window.firebaseDB;
-        try {
-            await sendPasswordResetEmail(auth, email);
-            alert('Se existir uma conta com esse e-mail, enviamos um link para redefinir a senha. Confira também a caixa de spam.');
-        } catch (erro) {
-            alert('Não foi possível enviar: ' + traduzirErroAuth(erro));
-        }
-    });
-}
-
-// --- CONFIGURAÇÕES DA CONTA ---
-function abrirConfiguracoes() {
-    if (!usuarioUid || !modalConfig) return;
-    document.getElementById('cfg-email').textContent = usuarioLogadoEmail;
-    document.getElementById('cfg-nome').value = usuarioLogadoNome;
-    ['cfg-senha-atual', 'cfg-senha-nova', 'cfg-senha-excluir'].forEach(id => { document.getElementById(id).value = ''; });
-    ext('aoAbrirConfiguracoes');
-    modalConfig.style.display = 'block';
-}
-
-const fecharConfig = document.getElementById('fechar-config');
-if (fecharConfig) fecharConfig.addEventListener('click', () => modalConfig.style.display = 'none');
-
-// Operações sensíveis pedem a senha atual de novo
-async function reautenticar(senhaAtual) {
-    const { auth, EmailAuthProvider, reauthenticateWithCredential } = window.firebaseDB;
-    const user = auth.currentUser;
-    if (!user) throw new Error('Sessão expirada. Entre novamente.');
-    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, senhaAtual));
-    return user;
-}
-
-const formCfgNome = document.getElementById('form-cfg-nome');
-if (formCfgNome) {
-    formCfgNome.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const nome = document.getElementById('cfg-nome').value.trim();
-        if (nome.length < 2 || nome.length > 40) return alert('O nome deve ter entre 2 e 40 caracteres.');
-
-        const { auth, db, doc, setDoc, updateProfile } = window.firebaseDB;
-        try {
-            await updateProfile(auth.currentUser, { displayName: nome });
-            await setDoc(doc(db, "usuarios", usuarioUid), { usuario: nome }, { merge: true });
-            usuarioLogadoNome = nome;
-            boasVindasTitulo.innerText = `Bem-vindo(a), ${usuarioLogadoNome}!`;
-            atualizarNotaAoVivo();
-            alert('Nome atualizado!');
-        } catch (erro) {
-            alert('Erro ao atualizar o nome: ' + traduzirErroAuth(erro));
-        }
-    });
-}
-
-const formCfgSenha = document.getElementById('form-cfg-senha');
-if (formCfgSenha) {
-    formCfgSenha.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const atual = document.getElementById('cfg-senha-atual').value;
-        const nova = document.getElementById('cfg-senha-nova').value;
-        if (nova.length < 6) return alert('A nova senha precisa ter pelo menos 6 caracteres.');
-        if (nova === atual) return alert('A nova senha precisa ser diferente da atual.');
-
-        try {
-            const user = await reautenticar(atual);
-            await window.firebaseDB.updatePassword(user, nova);
-            formCfgSenha.reset();
-            alert('Senha alterada com sucesso!');
-        } catch (erro) {
-            alert('Erro ao alterar a senha: ' + traduzirErroAuth(erro));
-        }
-    });
-}
-
-const formCfgExcluir = document.getElementById('form-cfg-excluir');
-if (formCfgExcluir) {
-    formCfgExcluir.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const senha = document.getElementById('cfg-senha-excluir').value;
-        if (!senha) return alert('Digite a sua senha para confirmar.');
-        if (!confirm('Tem certeza? Sua conta, agenda, financeiro e lembretes serão apagados para sempre. Isso não pode ser desfeito.')) return;
-
-        const { auth, db, doc, deleteDoc, deleteUser } = window.firebaseDB;
-        const uidExcluido = usuarioUid;
-        try {
-            const user = await reautenticar(senha);
-
-            // trava as gravações automáticas para nada ser recriado depois da exclusão
-            excluindoConta = true;
-            clearTimeout(timeoutSalvarNuvem);
-            pararEscutaDeAvisos();
-            pararVerificadorDeLembretes();
-
-            await deleteDoc(doc(db, "dados_usuarios", uidExcluido));
-            await deleteDoc(doc(db, "usuarios", uidExcluido));
-            await deleteUser(user);
-
-            localStorage.removeItem(`planify_notifs_lidas_${uidExcluido}`);
-            localStorage.removeItem(`planify_notifs_ocultas_${uidExcluido}`);
-            modalConfig.style.display = 'none';
-            limparSessaoLocal();
-            excluindoConta = false;
-            alert('Sua conta foi excluída.');
-        } catch (erro) {
-            excluindoConta = false;
-            if (auth.currentUser) {
-                iniciarEscutaDeAvisos();
-                iniciarVerificadorDeLembretes();
-            }
-            alert('Erro ao excluir a conta: ' + traduzirErroAuth(erro));
-        }
-    });
-}
-
-async function iniciarSessao(user) {
-    usuarioUid = user.uid;
-    usuarioLogadoEmail = user.email || '';
-    usuarioLogadoNome = user.displayName || (user.email ? user.email.split('@')[0] : 'Usuário');
-
-    const { db, doc, getDoc, setDoc } = window.firebaseDB;
-
-    // Registra o acesso (e recria o perfil caso não exista)
-    try {
-        await setDoc(doc(db, "usuarios", usuarioUid), {
-            usuario: usuarioLogadoNome,
-            email: usuarioLogadoEmail,
-            ultimoAcesso: Date.now()
-        }, { merge: true });
-    } catch (erro) {
-        console.error("Erro ao registrar acesso:", erro);
-    }
-
-    // Verifica se é administrador (documento admins/{uid}, criado só pelo Console)
-    usuarioEhAdmin = false;
-    try {
-        const adminSnap = await getDoc(doc(db, "admins", usuarioUid));
-        usuarioEhAdmin = adminSnap.exists();
-    } catch (erro) {
-        usuarioEhAdmin = false;
-    }
-    if (btnPainelAdmin) btnPainelAdmin.style.display = usuarioEhAdmin ? 'block' : 'none';
-
-    await ativarSessaoLogada();
-}
-
-async function ativarSessaoLogada() {
-    boasVindasTitulo.innerText = `Bem-vindo(a), ${usuarioLogadoNome}!`;
-    telaInicial.classList.remove('ativa');
-    telaLogado.classList.add('ativa');
-    await carregarDadosDoUsuarioDaNuvem();
-    iniciarEscutaDeAvisos();
-    renderizarPainelNotificacoes();
-    atualizarBotaoNotificacoes();
-    iniciarVerificadorDeLembretes();
-}
-
-function limparSessaoLocal() {
-    clearTimeout(timeoutSalvarNuvem);
-    pararEscutaDeAvisos();
-    pararVerificadorDeLembretes();
-    notifsPessoais = [];
-    ext('aoLimparSessao');
-    if (modalConfig) modalConfig.style.display = 'none';
-    usuarioUid = '';
-    usuarioLogadoEmail = '';
-    usuarioLogadoNome = '';
-    usuarioEhAdmin = false;
-    agendaPorSemana = {};
-    financeiroPorSemana = {};
-    listaLembretes = [];
-    listaHistoricoNotifs = [];
-    if (btnPainelAdmin) btnPainelAdmin.style.display = 'none';
-    if (abaBtnAdmin) abaBtnAdmin.style.display = 'none';
-
-    // volta para a aba principal para o próximo login não abrir no admin
-    document.querySelectorAll('.btn-aba').forEach(b => b.classList.toggle('ativa', b.dataset.aba === 'aba-principal'));
-    document.querySelectorAll('.conteudo-aba').forEach(c => c.classList.toggle('ativa', c.id === 'aba-principal'));
-
-    telaLogado.classList.remove('ativa');
-    telaInicial.classList.add('ativa');
-}
-
-async function encerrarSessao() {
-    clearTimeout(timeoutSalvarNuvem);
-    pararEscutaDeAvisos(); // evita erro de permissão depois que o login sair
-    await sincronizarAgora(); // garante que nada se perca antes de sair
-    try {
-        await window.firebaseDB.signOut(window.firebaseDB.auth);
-    } catch (erro) {
-        console.error("Erro ao sair:", erro);
-    }
-    limparSessaoLocal();
-}
-
-// Mantém a sessão entre recarregamentos da página (o Firebase guarda o login)
-function iniciarObservadorDeSessao() {
-    const { auth, onAuthStateChanged } = window.firebaseDB;
-    onAuthStateChanged(auth, async (user) => {
-        if (cadastroEmAndamento) return;
-        if (user) {
-            await iniciarSessao(user);
-        } else {
-            limparSessaoLocal();
-        }
-    });
-}
-
-// --- MENU HAMBÚRGUER ---
-if (btnMenuHamburguer) {
-    btnMenuHamburguer.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdownMenu.classList.toggle('mostrar');
-    });
-}
-
-window.addEventListener('click', () => {
-    if (dropdownMenu && dropdownMenu.classList.contains('mostrar')) {
-        dropdownMenu.classList.remove('mostrar');
-    }
-});
-
-if (btnTrocarConta) {
-    btnTrocarConta.addEventListener('click', async () => {
-        dropdownMenu.classList.remove('mostrar');
-        await encerrarSessao();
-        modalLogin.style.display = 'block';
-    });
-}
-
-if (btnConfiguracoes) {
-    btnConfiguracoes.addEventListener('click', () => {
-        dropdownMenu.classList.remove('mostrar');
-        abrirConfiguracoes();
-    });
-}
-
-if (btnDesconectar) {
-    btnDesconectar.addEventListener('click', () => {
-        dropdownMenu.classList.remove('mostrar');
-        encerrarSessao();
-    });
-}
-
-// SUPORTE
-if (btnSuporte) {
-    btnSuporte.addEventListener('click', () => {
-        dropdownMenu.classList.remove('mostrar');
-        window.location.href = "mailto:projetoplanify@gmail.com?subject=Suporte%20PlaniFy";
-    });
-}
-
-// --- PAINEL ADMIN (liberado só para contas listadas em admins/{uid}; as regras do Firestore reforçam isso) ---
-if (btnPainelAdmin) {
-    btnPainelAdmin.addEventListener('click', () => {
-        dropdownMenu.classList.remove('mostrar');
-        if (!usuarioEhAdmin) return;
-
-        if (abaBtnAdmin) abaBtnAdmin.style.display = 'inline-block';
-
-        document.querySelectorAll('.btn-aba').forEach(b => b.classList.remove('ativa'));
-        document.querySelectorAll('.conteudo-aba').forEach(c => c.classList.remove('ativa'));
-
-        const abaAdmin = document.getElementById('aba-admin');
-        if (abaAdmin) {
-            abaAdmin.classList.add('ativa');
-            if (abaBtnAdmin) abaBtnAdmin.classList.add('ativa');
-            atualizarMetricasAdmin();
-            ext('aoAbrirAba', 'aba-admin');
-        }
-    });
-}
-
-async function atualizarMetricasAdmin() {
-    if (!window.firebaseDB || !usuarioEhAdmin) return;
-    const { db, collection, getDocs } = window.firebaseDB;
-
-    const corpoTabela = document.getElementById('admin-corpo-tabela-usuarios');
-    if (corpoTabela) corpoTabela.innerHTML = '<tr><td colspan="3" style="text-align:center;">Carregando dados da nuvem...</td></tr>';
-
-    try {
-        // O admin lê apenas os perfis (nome, e-mail e contadores). Nunca agenda nem financeiro.
-        const usersSnap = await getDocs(collection(db, "usuarios"));
-
-        const JANELA_ATIVOS = 30 * 60 * 1000; // 30 minutos
-        const agora = Date.now();
-        let totalUsuarios = 0;
-        let ativos = 0;
-        let registrosGlobais = 0;
-        const listaUsuarios = [];
-
-        usersSnap.forEach((docSnap) => {
-            const u = docSnap.data();
-            totalUsuarios++;
-            registrosGlobais += Number(u.totalRegistros) || 0;
-            if (u.ultimoAcesso && agora - u.ultimoAcesso <= JANELA_ATIVOS) ativos++;
-            listaUsuarios.push({ uid: docSnap.id, ...u });
-        });
-
-        document.getElementById('admin-total-usuarios').textContent = totalUsuarios;
-        document.getElementById('admin-usuarios-logados').textContent = `${ativos} (últimos 30 min)`;
-        document.getElementById('admin-registros-hoje').textContent = registrosGlobais;
-
-        if (corpoTabela) {
-            corpoTabela.innerHTML = '';
-            if (listaUsuarios.length === 0) {
-                corpoTabela.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #a3c1ad;">Nenhum usuário registrado ainda.</td></tr>';
-            } else {
-                listaUsuarios.forEach(u => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${escapeXML(u.usuario || '-')}</td>
-                        <td>${escapeXML(u.email || '-')}</td>
-                        <td></td>
-                    `;
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.textContent = 'Remover dados';
-                    btn.style.cssText = 'padding: 4px 8px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;';
-                    btn.addEventListener('click', () => adminRemoverDados(u.uid, u.email));
-                    tr.lastElementChild.appendChild(btn);
-                    corpoTabela.appendChild(tr);
-                });
-            }
-        }
-    } catch (erro) {
-        console.error("Erro ao carregar métricas admin:", erro);
-        if (corpoTabela) corpoTabela.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#e74c3c;">Sem permissão ou erro ao carregar.</td></tr>';
-    }
-}
-
-async function adminRemoverDados(uid, email) {
-    if (!window.firebaseDB || !usuarioEhAdmin) return;
-    if (!confirm(`Remover o perfil e todos os dados de ${email} da nuvem?\n\nObs.: o login em si só pode ser apagado no Console do Firebase (Authentication).`)) return;
-
-    const { db, doc, deleteDoc } = window.firebaseDB;
-    try {
-        await deleteDoc(doc(db, "dados_usuarios", uid));
-        await deleteDoc(doc(db, "usuarios", uid));
-        alert('Dados removidos da nuvem.');
-        atualizarMetricasAdmin();
-    } catch (e) {
-        alert('Erro ao remover dados: ' + e.message);
-    }
-}
-
-// Aviso global para todos os usuários
-const formAdminAviso = document.getElementById('form-admin-aviso');
-if (formAdminAviso) {
-    formAdminAviso.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!window.firebaseDB || !usuarioEhAdmin) return;
-
-        const titulo = document.getElementById('admin-aviso-titulo').value.trim();
-        const texto = document.getElementById('admin-aviso-texto').value.trim();
-        if (!titulo || !texto) return;
-
-        const { db, doc, setDoc } = window.firebaseDB;
-        const idAviso = String(Date.now());
-
-        try {
-            await setDoc(doc(db, "avisos_globais", idAviso), {
-                titulo: `[AVISO ADMIN] ${titulo}`,
-                mensagem: texto,
-                horario: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                timestamp: Date.now()
-            });
-
-            formAdminAviso.reset();
-            alert('Aviso global publicado! Aparecerá no sininho de todos os usuários em tempo real.');
-        } catch (erro) {
-            alert('Erro ao publicar aviso: ' + erro.message);
-        }
-    });
-}
-
-// Backup dos perfis em JSON (sem senhas e sem dados pessoais de agenda/financeiro)
-const btnAdminBackup = document.getElementById('btn-admin-backup');
-if (btnAdminBackup) {
-    btnAdminBackup.addEventListener('click', async () => {
-        if (!window.firebaseDB || !usuarioEhAdmin) return;
-        const { db, collection, getDocs } = window.firebaseDB;
-        try {
-            const usersSnap = await getDocs(collection(db, "usuarios"));
-            const backup = [];
-            usersSnap.forEach(d => {
-                const u = d.data();
-                backup.push({ uid: d.id, usuario: u.usuario, email: u.email, criadoEm: u.criadoEm });
-            });
-
-            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `PlaniFy_Backup_Usuarios_${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-        } catch (erro) {
-            alert('Erro ao gerar backup: ' + erro.message);
-        }
-    });
-}
-
-// --- LÓGICA DE ABAS ---
-const botoesAba = document.querySelectorAll('.btn-aba');
-const conteudosAba = document.querySelectorAll('.conteudo-aba');
-
-botoesAba.forEach(botao => {
-    botao.addEventListener('click', () => {
-        botoesAba.forEach(btn => btn.classList.remove('ativa'));
-        conteudosAba.forEach(conteudo => conteudo.classList.remove('ativa'));
-
-        botao.classList.add('ativa');
-        const abaId = botao.getAttribute('data-aba');
-        const conteudoAlvo = document.getElementById(abaId);
-        if (conteudoAlvo) conteudoAlvo.classList.add('ativa');
-
-        if (abaId === 'aba-financeiro') {
-            atualizarEspelhamentoEBalancos();
-            atualizarNotaAoVivo();
-            const painelResumo = document.getElementById('visao-resumo-financeiro');
-            if (painelResumo && painelResumo.classList.contains('ativa')) atualizarResumoSemanal();
-        } else if (abaId === 'aba-lembretes') {
-            renderizarLembretes();
-        } else if (abaId === 'aba-admin') {
-            atualizarMetricasAdmin();
-        }
-        ext('aoAbrirAba', abaId);
-    });
-});
-
-// --- TABELAS E RESTANTE DA INTERFACE ---
-function atualizarCabecalhosDatas() {
-    const seletores = ['#aba-organizacao thead th', '#visao-grade-financeira thead th'];
-    const hoje = new Date();
-
-    seletores.forEach(seletor => {
-        document.querySelectorAll(seletor).forEach((th, indice) => {
-            if (indice === 0) return;
-            const data = adicionarDias(semanaSelecionada, indice - 1);
-            th.innerHTML = `${diasDaSemana[indice - 1]}<span class="data-cabecalho">${formatarDataCurta(data)}</span>`;
-            th.classList.toggle('coluna-hoje-cabecalho', mesmoDia(data, hoje));
-        });
-    });
-}
-
-function gerarTabelaAgenda() {
-    const corpoTabela = document.getElementById('corpo-tabela-agenda');
-    if (!corpoTabela) return;
-    corpoTabela.innerHTML = '';
-
-    const chave = chaveDia(semanaSelecionada);
-    const hoje = new Date();
-
-    for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
-        const tr = document.createElement('tr');
-        const tdHorario = document.createElement('td');
-        tdHorario.textContent = formatarHora(hIndex);
-        tdHorario.classList.add('coluna-horario');
-        tr.appendChild(tdHorario);
-
-        for (let dia = 0; dia < 7; dia++) {
-            const tdDia = document.createElement('td');
-            tdDia.contentEditable = "true";
-            tdDia.classList.add('celula-agenda');
-            tdDia.textContent = textoAgenda(chave, hIndex, dia);
-
-            if (mesmoDia(adicionarDias(semanaSelecionada, dia), hoje)) tdDia.classList.add('coluna-hoje');
-
-            tdDia.addEventListener('input', () => {
-                const texto = tdDia.innerText.trim();
-                salvarTextoAgenda(hIndex, dia, texto);
-                atualizarAtividadeEspelhada(hIndex, dia, texto);
-                if (modoAgenda === 'mensal') atualizarCalendario();
-                atualizarNotaAoVivo();
-            });
-
-            tr.appendChild(tdDia);
-        }
-        corpoTabela.appendChild(tr);
-    }
-}
-
-function gerarTabelaFinanceira() {
-    const corpoTabela = document.getElementById('corpo-tabela-financeira');
-    if (!corpoTabela) return;
-    corpoTabela.innerHTML = '';
-
-    const chave = chaveDia(semanaSelecionada);
-    const hoje = new Date();
-
-    for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
-        const tr = document.createElement('tr');
-        const tdHorario = document.createElement('td');
-        tdHorario.textContent = formatarHora(hIndex);
-        tdHorario.classList.add('coluna-horario');
-        tr.appendChild(tdHorario);
-
-        for (let dia = 0; dia < 7; dia++) {
-            const td = document.createElement('td');
-            if (mesmoDia(adicionarDias(semanaSelecionada, dia), hoje)) td.classList.add('coluna-hoje');
-
-            const container = document.createElement('div');
-            container.classList.add('celula-financeira-container');
-
-            const spanAtividade = document.createElement('span');
-            spanAtividade.classList.add('atividade-info-financeiro');
-            spanAtividade.id = `ativ-fin-${hIndex}-${dia}`;
-            spanAtividade.textContent = textoAgenda(chave, hIndex, dia) || '-';
-
-            const inputValor = document.createElement('input');
-            inputValor.type = 'number';
-            inputValor.step = '0.01';
-            inputValor.placeholder = 'R$ 0,00';
-            inputValor.classList.add('input-valor-financeiro');
-
-            const item = itemFinanceiro(chave, hIndex, dia);
-            if (item.valor > 0) {
-                inputValor.value = item.valor;
-                const catItem = ext('categoriaDe', textoAgenda(chave, hIndex, dia), item);
-                if (catItem) inputValor.title = catItem;
-                inputValor.classList.add(item.tipo === 'entrada' ? 'valor-entrada' : 'valor-saida');
-            }
-
-            const aoMudarValor = () => salvarValorFinanceiro(hIndex, dia, parseFloat(inputValor.value) || 0, inputValor);
-            inputValor.addEventListener('input', aoMudarValor);
-            inputValor.addEventListener('change', aoMudarValor);
-
-            container.appendChild(spanAtividade);
-            container.appendChild(inputValor);
-            td.appendChild(container);
-            tr.appendChild(td);
-        }
-        corpoTabela.appendChild(tr);
-    }
-    gerarLinhaBalancoDiario();
-    calcularBalancos();
-}
-
-function gerarLinhaBalancoDiario() {
-    const linhaBalanco = document.getElementById('linha-balanco-diario');
-    if (!linhaBalanco) return;
-    linhaBalanco.innerHTML = '<td><strong>Balanço do Dia</strong></td>';
-    const hoje = new Date();
-
-    for (let dia = 0; dia < 7; dia++) {
-        const tdBalanco = document.createElement('td');
-        tdBalanco.id = `balanco-dia-${dia}`;
-        tdBalanco.style.fontWeight = 'bold';
-        tdBalanco.textContent = 'R$ 0,00';
-        if (mesmoDia(adicionarDias(semanaSelecionada, dia), hoje)) tdBalanco.classList.add('coluna-hoje');
-        linhaBalanco.appendChild(tdBalanco);
-    }
-}
-
-const btnsTipoTransacao = document.querySelectorAll('.btn-tipo-transacao');
-btnsTipoTransacao.forEach(btn => {
-    btn.addEventListener('click', () => {
-        btnsTipoTransacao.forEach(b => b.classList.remove('ativa'));
-        btn.classList.add('ativa');
-        tipoTransacaoAtual = btn.getAttribute('data-tipo');
-    });
-});
-
-const btnsVisao = document.querySelectorAll('.btn-visao');
-btnsVisao.forEach(btn => {
-    btn.addEventListener('click', () => {
-        btnsVisao.forEach(b => b.classList.remove('ativa'));
-        btn.classList.add('ativa');
-        const visao = btn.getAttribute('data-visao');
-        const painelGrade = document.getElementById('visao-grade-financeira');
-        const painelResumo = document.getElementById('visao-resumo-financeiro');
-        if (visao === 'grade') {
-            painelGrade.classList.add('ativa');
-            painelResumo.classList.remove('ativa');
-        } else {
-            painelGrade.classList.remove('ativa');
-            painelResumo.classList.add('ativa');
-            atualizarResumoSemanal();
-        }
-    });
-});
-
-function salvarValorFinanceiro(hIndex, diaIndex, valor, inputElement) {
-    const chave = chaveDia(semanaSelecionada);
-    const campo = `${hIndex}-${diaIndex}`;
-    if (!financeiroPorSemana[chave]) financeiroPorSemana[chave] = {};
-
-    if (valor <= 0) {
-        delete financeiroPorSemana[chave][campo];
-        inputElement.classList.remove('valor-entrada', 'valor-saida');
-    } else {
-        financeiroPorSemana[chave][campo] = { valor, tipo: tipoTransacaoAtual };
-        inputElement.classList.toggle('valor-entrada', tipoTransacaoAtual === 'entrada');
-        inputElement.classList.toggle('valor-saida', tipoTransacaoAtual !== 'entrada');
-    }
-    if (Object.keys(financeiroPorSemana[chave]).length === 0) delete financeiroPorSemana[chave];
-    sincronizarDadosComNuvem();
-    calcularBalancos();
-    atualizarNotaAoVivo();
-    ext('aoMudarFinanceiro');
-}
-
-function atualizarAtividadeEspelhada(hIndex, diaIndex, texto) {
-    const span = document.getElementById(`ativ-fin-${hIndex}-${diaIndex}`);
-    if (span) span.textContent = texto !== '' ? texto : '-';
-}
-
-function atualizarEspelhamentoEBalancos() {
-    const chave = chaveDia(semanaSelecionada);
-    for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
-        for (let dia = 0; dia < 7; dia++) {
-            atualizarAtividadeEspelhada(hIndex, dia, textoAgenda(chave, hIndex, dia));
-        }
-    }
-    calcularBalancos();
-}
-
-function calcularBalancos() {
-    const dados = financeiroPorSemana[chaveDia(semanaSelecionada)] || {};
-    let totalEntradasGeral = 0;
-    let totalSaidasGeral = 0;
-
-    for (let dia = 0; dia < 7; dia++) {
-        let balancoDia = 0;
-        for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
-            const item = dados[`${hIndex}-${dia}`];
-            if (item && item.valor > 0) {
-                if (item.tipo === 'entrada') { balancoDia += item.valor; totalEntradasGeral += item.valor; }
-                else { balancoDia -= item.valor; totalSaidasGeral += item.valor; }
-            }
-        }
-        const tdBalanco = document.getElementById(`balanco-dia-${dia}`);
-        if (tdBalanco) {
-            tdBalanco.textContent = `R$ ${balancoDia.toFixed(2)}`;
-            tdBalanco.style.color = balancoDia > 0 ? '#2ecc71' : (balancoDia < 0 ? '#e74c3c' : '');
-        }
-    }
-
-    const resEntradas = document.getElementById('resumo-total-entradas');
-    const resSaidas = document.getElementById('resumo-total-saidas');
-    const resBalanco = document.getElementById('resumo-balanco-geral');
-    if (resEntradas) resEntradas.textContent = `R$ ${totalEntradasGeral.toFixed(2)}`;
-    if (resSaidas) resSaidas.textContent = `R$ ${totalSaidasGeral.toFixed(2)}`;
-    const balancoGeral = totalEntradasGeral - totalSaidasGeral;
-    if (resBalanco) {
-        resBalanco.textContent = `R$ ${balancoGeral.toFixed(2)}`;
-        resBalanco.style.color = balancoGeral >= 0 ? '#2ecc71' : '#e74c3c';
-    }
-}
-
-function atualizarResumoSemanal() {
-    const listaDetalhes = document.getElementById('detalhes-lista-financeira');
-    if (!listaDetalhes) return;
-    listaDetalhes.innerHTML = '';
-    let encontrouTransacao = false;
-    const chave = chaveDia(semanaSelecionada);
-
-    for (let dia = 0; dia < 7; dia++) {
-        const dataDoDia = adicionarDias(semanaSelecionada, dia);
-        for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
-            const item = itemFinanceiro(chave, hIndex, dia);
-            if (item.valor > 0) {
-                encontrouTransacao = true;
-                const horaText = formatarHora(hIndex);
-                const nomeAtividade = textoAgenda(chave, hIndex, dia) || 'Sem nome';
-                const cor = item.tipo === 'entrada' ? '#2ecc71' : '#e74c3c';
-                const sinal = item.tipo === 'entrada' ? '+' : '-';
-
-                const divItem = document.createElement('div');
-                divItem.classList.add('item-transacao-detalhe');
-                divItem.innerHTML = `
-                    <span><strong>${diasDaSemana[dia]} ${formatarDataCurta(dataDoDia)} (${horaText})</strong> - ${escapeXML(nomeAtividade)}${' · ' + escapeXML(ext('categoriaDe', textoAgenda(chave, hIndex, dia), item) || 'Outros')}</span>
-                    <span style="color: ${cor};"><strong>${sinal} R$ ${item.valor.toFixed(2)}</strong></span>
-                `;
-                listaDetalhes.appendChild(divItem);
-            }
-        }
-    }
-    if (!encontrouTransacao) listaDetalhes.innerHTML = '<p style="text-align: center; color: #aaaaaa; padding: 10px;">Nenhuma movimentação lançada nesta semana.</p>';
-    ext('aoAtualizarResumo');
-}
-
-function irParaSemana(dataQualquer) {
-    semanaSelecionada = inicioDaSemana(dataQualquer);
-    mesExibido = mesDaSemana(semanaSelecionada);
-    renderizarSemana();
-}
-
-function selecionarSemanaNoCalendario(inicioSemana) {
-    semanaSelecionada = inicioDaSemana(inicioSemana);
-    definirModoAgenda('semanal');
-    renderizarSemana();
-}
-
-function descreverSemana() {
-    const fim = adicionarDias(semanaSelecionada, 6);
-    const mudaDeAno = semanaSelecionada.getFullYear() !== fim.getFullYear();
-    const inicioTexto = mudaDeAno ? formatarDataCompleta(semanaSelecionada) : formatarDataCurta(semanaSelecionada);
-    const titulo = `Semana de ${inicioTexto} a ${formatarDataCompleta(fim)}`;
-    const diferenca = Math.round((semanaSelecionada - inicioDaSemana(new Date())) / (7 * 24 * 60 * 60 * 1000));
-    let subtitulo = diferenca === 0 ? 'Semana atual' : (diferenca === 1 ? 'Próxima semana' : (diferenca === -1 ? 'Semana passada' : (diferenca > 1 ? `Daqui a ${diferenca} semanas` : `Há ${Math.abs(diferenca)} semanas`)));
-    return { titulo, subtitulo };
-}
-
-function atualizarNavegadoresSemana() {
-    const { titulo, subtitulo } = descreverSemana();
-    document.querySelectorAll('.semana-titulo').forEach(el => el.textContent = titulo);
-    document.querySelectorAll('.semana-sub').forEach(el => el.textContent = subtitulo);
-}
-
-function atualizarCalendario() {
-    const grade = document.getElementById('calendario-grade');
-    const tituloMes = document.getElementById('titulo-mes');
-    if (!grade || !tituloMes) return;
-
-    const ano = mesExibido.getFullYear();
-    const mes = mesExibido.getMonth();
-    tituloMes.textContent = `${nomesDosMeses[mes]} de ${ano}`;
-    grade.innerHTML = '';
-
-    const cabecalho = document.createElement('div');
-    cabecalho.classList.add('calendario-dias-semana');
-    diasAbreviados.forEach(nome => {
-        const span = document.createElement('span');
-        span.textContent = nome;
-        cabecalho.appendChild(span);
-    });
-    grade.appendChild(cabecalho);
-
-    const ultimoDoMes = new Date(ano, mes + 1, 0);
-    const chaveSelecionada = chaveDia(semanaSelecionada);
-    const hoje = new Date();
-    let inicioLinha = inicioDaSemana(new Date(ano, mes, 1));
-
-    while (inicioLinha <= ultimoDoMes) {
-        const inicioDestaLinha = inicioLinha;
-        const chaveLinha = chaveDia(inicioDestaLinha);
-        const anotacoes = agendaPorSemana[chaveLinha] || {};
-        const camposPreenchidos = Object.keys(anotacoes);
-
-        const linha = document.createElement('div');
-        linha.classList.add('calendario-semana');
-        if (chaveLinha === chaveSelecionada) linha.classList.add('selecionada');
-
-        for (let d = 0; d < 7; d++) {
-            const data = adicionarDias(inicioDestaLinha, d);
-            const celula = document.createElement('div');
-            celula.classList.add('calendario-dia');
-            if (data.getMonth() !== mes) celula.classList.add('fora-do-mes');
-            if (mesmoDia(data, hoje)) celula.classList.add('hoje');
-            if (camposPreenchidos.some(campo => campo.endsWith(`-${d}`))) celula.classList.add('tem-atividade');
-            const numero = document.createElement('span');
-            numero.textContent = data.getDate();
-            celula.appendChild(numero);
-            linha.appendChild(celula);
-        }
-
-        linha.addEventListener('click', () => selecionarSemanaNoCalendario(inicioDestaLinha));
-        grade.appendChild(linha);
-        inicioLinha = adicionarDias(inicioLinha, 7);
-    }
-}
-
-function renderizarSemana() {
-    atualizarCabecalhosDatas();
-    gerarTabelaAgenda();
-    gerarTabelaFinanceira();
-    atualizarNavegadoresSemana();
-    atualizarCalendario();
-    const painelResumo = document.getElementById('visao-resumo-financeiro');
-    if (painelResumo && painelResumo.classList.contains('ativa')) atualizarResumoSemanal();
-    atualizarNotaAoVivo();
-    ext('aoRenderizarSemana');
-}
-
-document.addEventListener('click', (e) => {
-    const botao = e.target.closest('[data-nav]');
-    if (!botao) return;
-    const acao = botao.dataset.nav;
-    if (acao === 'anterior') irParaSemana(adicionarDias(semanaSelecionada, -7));
-    else if (acao === 'proxima') irParaSemana(adicionarDias(semanaSelecionada, 7));
-    else if (acao === 'hoje') irParaSemana(new Date());
-});
-
-function definirModoAgenda(modo) {
-    modoAgenda = modo;
-    document.querySelectorAll('.btn-modo-agenda').forEach(b => b.classList.toggle('ativa', b.dataset.modo === modo));
-    const painel = document.getElementById('painel-calendario');
-    if (painel) painel.classList.toggle('oculto', modo !== 'mensal');
-    if (modo === 'mensal') { mesExibido = mesDaSemana(semanaSelecionada); atualizarCalendario(); }
-}
-
-document.querySelectorAll('.btn-modo-agenda').forEach(b => b.addEventListener('click', () => definirModoAgenda(b.dataset.modo)));
-
-const btnMesAnterior = document.getElementById('btn-mes-anterior');
-const btnMesProximo = document.getElementById('btn-mes-proximo');
-if (btnMesAnterior) btnMesAnterior.addEventListener('click', () => { mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() - 1, 1); atualizarCalendario(); });
-if (btnMesProximo) btnMesProximo.addEventListener('click', () => { mesExibido = new Date(mesExibido.getFullYear(), mesExibido.getMonth() + 1, 1); atualizarCalendario(); });
-
-// --- NOTA EM PDF ---
-let temporizadorNota = null;
-let urlPreviaAtual = null;
-
-function coletarDadosDaNota() {
-    const chave = chaveDia(semanaSelecionada);
-    const dias = [];
-    for (let dia = 0; dia < 7; dia++) {
-        const semanaAgenda = agendaPorSemana[chave] || {};
-        const semanaFin = financeiroPorSemana[chave] || {};
-        const itensDoDia = [];
-        for (let hIndex = 0; hIndex < TOTAL_HORAS; hIndex++) {
-            const campo = `${hIndex}-${dia}`;
-            const atividade = (semanaAgenda[campo] || '').trim();
-            const fin = semanaFin[campo];
-            const valorNum = fin && Number(fin.valor) > 0 ? Number(fin.valor) : 0;
-            const tipoValido = fin && (fin.tipo === 'entrada' || fin.tipo === 'saida') ? fin.tipo : '';
-            if (atividade !== '' || valorNum > 0) {
-                itensDoDia.push({ hora: formatarHora(hIndex), atividade: (atividade || 'Lançamento financeiro') + (valorNum > 0 ? ` (${ext('categoriaDe', atividade, fin) || 'Outros'})` : ''), tipo: valorNum > 0 ? tipoValido : '', valor: valorNum });
-            }
-        }
-        dias.push({ itens: itensDoDia });
-    }
-    return { usuario: usuarioLogadoNome || 'Usuário PlaniFy', semanaInicio: semanaSelecionada, emissao: new Date(), dias };
-}
-
-function atualizarNotaAoVivo() {
-    const status = document.getElementById('nota-status');
-    const iframe = document.getElementById('iframe-previa-nota');
-    if (!window.PlanifyNota) return;
-    if (temporizadorNota) clearTimeout(temporizadorNota);
-    temporizadorNota = setTimeout(() => {
-        try {
-            const resultado = window.PlanifyNota.gerarNotaPDF(coletarDadosDaNota());
-            const blob = new Blob([resultado.bytes], { type: 'application/pdf' });
-            if (urlPreviaAtual) URL.revokeObjectURL(urlPreviaAtual);
-            urlPreviaAtual = URL.createObjectURL(blob);
-            if (iframe) iframe.src = urlPreviaAtual;
-            if (status) {
-                status.textContent = `Nota atualizada · ${resultado.resumo.registros} registros · Saldo: ${window.PlanifyNota.moedaComSinal(resultado.resumo.saldo)}`;
-                status.style.color = '#2ecc71';
-            }
-        } catch (erro) {}
-    }, 250);
-}
-
-const btnPreviaNota = document.getElementById('btn-previa-nota');
-const painelPreviaNota = document.getElementById('painel-previa-nota');
-const btnFecharPrevia = document.getElementById('btn-fechar-previa');
-const btnBaixarNota = document.getElementById('btn-baixar-nota');
-const menuFormatosNota = document.getElementById('menu-formatos-nota');
-
-if (btnPreviaNota && painelPreviaNota) btnPreviaNota.addEventListener('click', () => { painelPreviaNota.classList.toggle('oculto'); if (!painelPreviaNota.classList.contains('oculto')) atualizarNotaAoVivo(); });
-if (btnFecharPrevia && painelPreviaNota) btnFecharPrevia.addEventListener('click', () => painelPreviaNota.classList.add('oculto'));
-
-if (btnBaixarNota && menuFormatosNota) {
-    btnBaixarNota.addEventListener('click', (e) => { e.stopPropagation(); const aberto = menuFormatosNota.classList.toggle('oculto'); btnBaixarNota.setAttribute('aria-expanded', !aberto); });
-    window.addEventListener('click', () => { if (!menuFormatosNota.classList.contains('oculto')) { menuFormatosNota.classList.add('oculto'); btnBaixarNota.setAttribute('aria-expanded', 'false'); } });
-    menuFormatosNota.querySelectorAll('button[data-formato]').forEach(b => {
-        b.addEventListener('click', () => {
-            const formato = b.dataset.formato;
-            menuFormatosNota.classList.add('oculto');
-            if (formato === 'pdf') {
-                const resultado = window.PlanifyNota.gerarNotaPDF(coletarDadosDaNota());
-                const url = URL.createObjectURL(new Blob([resultado.bytes], { type: 'application/pdf' }));
-                const a = document.createElement('a'); a.href = url; a.download = resultado.nomeArquivo; a.click();
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-            } else if (formato === 'xlsx') {
-                ext('baixarExcel');
-            }
-        });
-    });
-}
-
-function escapeXML(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-// --- LEMBRETES (SINCRONIZADOS NA NUVEM) ---
-const formNovoLembrete = document.getElementById('form-novo-lembrete');
-const containerListaLembretes = document.getElementById('container-lista-lembretes');
-const btnAtivarNotificacoes = document.getElementById('btn-ativar-notificacoes');
-
-if (formNovoLembrete) {
-    formNovoLembrete.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const titulo = document.getElementById('lembrete-titulo').value.trim();
-        const valor = parseFloat(document.getElementById('lembrete-valor').value) || 0;
-        const data = document.getElementById('lembrete-data').value;
-        const hora = document.getElementById('lembrete-hora').value;
-
-        if (!titulo || !data || !hora) return;
-        listaLembretes.push({ id: Date.now(), titulo, valor, data, hora, concluido: false });
-        sincronizarDadosComNuvem();
-        formNovoLembrete.reset();
-        renderizarLembretes();
-    });
-}
-
-function renderizarLembretes() {
-    if (!containerListaLembretes) return;
-    containerListaLembretes.innerHTML = '';
-    if (listaLembretes.length === 0) {
-        containerListaLembretes.innerHTML = '<p class="notif-vazia">Nenhum lembrete de pagamento agendado</p>';
-        return;
-    }
-
-    const ordenados = [...listaLembretes].sort((a, b) => `${a.data}T${a.hora}`.localeCompare(`${b.data}T${b.hora}`));
-
-    ordenados.forEach(l => {
-        const card = document.createElement('div');
-        card.classList.add('card-item-lembrete');
-        if (l.concluido) card.classList.add('pago');
-        else if (l.disparado) card.classList.add('disparado');
-        card.innerHTML = `
-            <div class="info-lembrete">
-                <h4>${escapeXML(l.titulo)}</h4>
-                <p>R$ ${Number(l.valor).toFixed(2)} · ${escapeXML(formatarDataISO(l.data))} às ${escapeXML(l.hora)}${l.disparado && !l.concluido ? ' · ⏰ avisado' : ''}</p>
-            </div>
-            <div class="acoes-lembrete">
-                <button class="btn-acao-lembrete" onclick="alternarLembrete(${Number(l.id)})">✓</button>
-                <button class="btn-acao-lembrete" onclick="excluirLembrete(${Number(l.id)})">🗑</button>
-            </div>
-        `;
-        containerListaLembretes.appendChild(card);
-    });
-}
-
-window.alternarLembrete = (id) => {
-    listaLembretes = listaLembretes.map(l => l.id === id ? { ...l, concluido: !l.concluido } : l);
-    sincronizarDadosComNuvem();
-    renderizarLembretes();
-};
-
-window.excluirLembrete = (id) => {
-    listaLembretes = listaLembretes.filter(l => l.id !== id);
-    sincronizarDadosComNuvem();
-    renderizarLembretes();
-};
-
-function atualizarBotaoNotificacoes() {
-    if (!btnAtivarNotificacoes) return;
-    if (!('Notification' in window)) { btnAtivarNotificacoes.style.display = 'none'; return; }
-    if (Notification.permission === 'granted') btnAtivarNotificacoes.textContent = '✅ Notificações do navegador ativadas';
-    else if (Notification.permission === 'denied') btnAtivarNotificacoes.textContent = '🚫 Bloqueadas no navegador';
-    else btnAtivarNotificacoes.textContent = '🔔 Ativar Notificações do Navegador';
-}
-
-if (btnAtivarNotificacoes) {
-    btnAtivarNotificacoes.addEventListener('click', async () => {
-        if (!('Notification' in window)) return;
-        try { await Notification.requestPermission(); } catch (e) {}
-        atualizarBotaoNotificacoes();
-    });
-}
-
-// --- DISPARO AUTOMÁTICO DOS LEMBRETES ---
-function formatarDataISO(iso) {
-    const partes = String(iso || '').split('-');
-    return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : String(iso || '');
-}
-
-function mostrarToast(mensagem) {
-    let area = document.getElementById('area-toasts');
-    if (!area) {
-        area = document.createElement('div');
-        area.id = 'area-toasts';
-        document.body.appendChild(area);
-    }
-    const toast = document.createElement('div');
-    toast.className = 'toast-planify';
-    toast.textContent = mensagem;
-    toast.addEventListener('click', () => toast.remove());
-    area.appendChild(toast);
-    setTimeout(() => toast.remove(), 12000);
-}
-
-function notificarNoNavegador(titulo, corpo) {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    try { new Notification('⏰ Lembrete de pagamento: ' + titulo, { body: corpo }); } catch (e) {}
-}
-
-function verificarLembretes() {
-    if (!usuarioUid) return;
-    const agora = new Date();
-    let mudou = false;
-
-    listaLembretes.forEach(l => {
-        if (l.concluido || l.disparado) return;
-        const alvo = new Date(`${l.data}T${l.hora}`);
-        if (isNaN(alvo.getTime()) || alvo > agora) return;
-
-        l.disparado = true;
-        mudou = true;
-        const texto = `R$ ${Number(l.valor).toFixed(2)} · ${formatarDataISO(l.data)} às ${l.hora}`;
-        notifsPessoais.unshift({ id: l.id, titulo: l.titulo, texto, timestamp: Date.now() });
-        notificarNoNavegador(l.titulo, texto);
-        mostrarToast(`⏰ ${l.titulo} — ${texto}`);
-    });
-
-    if (mudou) {
-        notifsPessoais = notifsPessoais.slice(0, 30);
-        sincronizarDadosComNuvem();
-        renderizarLembretes();
-        renderizarPainelNotificacoes();
-    }
-}
-
-function iniciarVerificadorDeLembretes() {
-    verificarLembretes(); // os que venceram com o site fechado avisam assim que a conta abre
-    if (!intervaloLembretes) intervaloLembretes = setInterval(verificarLembretes, 30000);
-}
-
-function pararVerificadorDeLembretes() {
-    if (intervaloLembretes) {
-        clearInterval(intervaloLembretes);
-        intervaloLembretes = null;
-    }
-}
-
-// INICIALIZAÇÃO: espera o Firebase ficar pronto e passa a observar o login
-if (window.firebaseDB) {
-    iniciarObservadorDeSessao();
-} else {
-    window.addEventListener('firebasePronto', iniciarObservadorDeSessao);
+    :is(#aba-organizacao, #visao-grade-financeira) .tabela-agenda th:first-child { z-index: 3; }
+    #visao-grade-financeira .tabela-agenda tfoot td:first-child { background: #1b3323; font-size: 11px; }
+    .atividade-info-financeiro { max-width: 92px; font-size: 10px; }
+    .input-valor-financeiro { padding: 4px; font-size: 16px; }
+
+    /* ---------- Resumo, orçamento e gráfico ---------- */
+    .resumo-semanal-card { padding: 14px 12px; }
+    .metricas-resumo { gap: 10px; }
+    .card-metrica { min-width: 100%; padding: 12px; }
+    .item-transacao-detalhe { flex-direction: column; align-items: flex-start; gap: 2px; }
+    .orcamento-bloco, .grafico-bloco { padding: 12px; }
+    .orcamento-topo { flex-direction: column; align-items: stretch; }
+    #form-orcamento { width: 100%; }
+    #form-orcamento input { flex: 1; width: auto; min-width: 0; font-size: 16px; }
+
+    /* ---------- Lembretes e metas ---------- */
+    .lembretes-container { gap: 14px; }
+    .card-lembrete-form, .card-lembretes-lista { padding: 14px 12px; }
+    .linha-dupla { flex-wrap: wrap; }
+    .linha-dupla .campo-grupo { flex: 1 1 130px; }
+    .campo-grupo input { font-size: 16px; }
+    .lembretes-lista-cabecalho { flex-direction: column; align-items: stretch; }
+    .btn-notificacao { width: 100%; padding: 10px; }
+    .card-item-lembrete { flex-direction: column; align-items: stretch; gap: 8px; }
+    .acoes-lembrete { justify-content: flex-end; }
+    .btn-acao-lembrete { font-size: 20px; padding: 8px; }
+    .meta-acoes input { min-width: 100%; font-size: 16px; }
+    .meta-acoes button { flex: 1; padding: 10px 8px; }
+    .painel-calendario { padding: 10px; }
+    .calendario-dia { padding: 6px 0; font-size: 13px; }
+
+    /* ---------- Janelas (login, cadastro, configurações) ---------- */
+    .modal { overflow-y: auto; }
+    .modal-conteudo { width: 92vw; max-width: 380px; margin: 6% auto; padding: 20px 16px; }
+    .modal-conteudo.modal-config-conteudo { width: 94vw; max-width: 420px; margin: 3% auto; max-height: 92vh; }
+    .modal-conteudo input, .modal-conteudo select { font-size: 16px; }
+    .modal-conteudo .cfg-aba { min-width: 0; padding: 8px 4px; font-size: 12px; }
+    .rep-dias label { padding: 8px 10px; }
+
+    /* ---------- Avisos na tela (toast) ---------- */
+    html body #area-toasts { left: 12px; right: 12px; top: 10px; max-width: none; }
+
+    /* ---------- Painel admin ---------- */
+    #aba-admin .resumo-semanal-card > div[style*="space-between"] { flex-wrap: wrap !important; gap: 8px !important; }
+    .admin-aviso-item { flex-direction: column; }
+    .admin-aviso-item button { align-self: flex-end; }
+
+    /* ---------- Página de apresentação (antes do login) ---------- */
+    .nav-landing { padding: 10px 4%; gap: 8px; }
+    .nav-marca { font-size: 1.1rem; }
+    .nav-acoes button { padding: 6px 10px; font-size: 13px; }
+    .hero { padding: 14px; }
+    .botoes-topo button { padding: 8px 14px; }
+    .conteudo-principal { padding-left: 4%; }
+    .titulo { letter-spacing: -1px; }
+    .secao { padding: 64px 5%; }
+    .secao-titulo { margin-bottom: 26px; }
+    .texto-grande { font-size: 1.15rem; }
+    .subtitulo-secao { font-size: 1.3rem; margin: 54px 0 22px; }
+    .destaque:hover, .card-func:hover, .card-aplicacao:hover, .card-membro:hover { transform: none; }
+    .passo { padding-top: 56px; }
+    .rodape-site { padding: 50px 6% 20px; }
+    .btn-voltar-topo { right: 14px; bottom: 14px; width: 42px; height: 42px; }
+
+    /* ---------- Tema claro no celular ---------- */
+    html[data-tema="claro"] #tela-logado #visao-grade-financeira .tabela-agenda tfoot td:first-child { background: #dcebe1; }
+    html[data-tema="claro"] #tela-logado :is(#aba-organizacao, #visao-grade-financeira) .tabela-agenda :is(th:first-child, td.coluna-horario),
+    html[data-tema="claro"] #tela-logado #visao-grade-financeira .tabela-agenda tfoot td:first-child { box-shadow: inset -1px 0 0 #c8dccf; }
+}
+
+/* =====================================================
+   Avisos na tela (toast) com transição suave
+   ===================================================== */
+.toast-planify {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 200px;
+    overflow: hidden;
+    transition: opacity 0.35s ease, transform 0.35s ease, max-height 0.35s ease, padding 0.35s ease, margin 0.35s ease;
+}
+.toast-planify.visivel { opacity: 1; transform: translateY(0); }
+.toast-planify.saindo {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: -8px;   /* compensa o espaço entre os avisos para a pilha descer suave */
+    border-width: 0;
+}
+
+/* =====================================================
+   Lembrete mensal: caixa de seleção
+   ===================================================== */
+.campo-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #a3c1ad; margin: 4px 0 12px; cursor: pointer; line-height: 1.4; }
+.campo-check input { width: 18px; height: 18px; flex-shrink: 0; accent-color: #2ecc71; cursor: pointer; }
+html[data-tema="claro"] #tela-logado .campo-check { color: #4f6b5a; }
+
+/* =====================================================
+   Janela de confirmação ("Quer mesmo fazer isso?")
+   ===================================================== */
+#modal-confirmar { z-index: 60; animation: fundoConfirmar 0.2s ease; }
+.modal-conteudo.modal-confirmar-conteudo { width: 360px; max-width: 92vw; margin: 18vh auto 0; text-align: center; animation: subirConfirmar 0.25s ease; }
+.modal-confirmar-conteudo h2 { margin-bottom: 10px; }
+.confirmar-mensagem { font-size: 14px; line-height: 1.6; color: #cfe3d7; margin-bottom: 20px; }
+.confirmar-acoes { display: flex; gap: 10px; }
+.modal-conteudo .confirmar-acoes button { flex: 1; padding: 11px 8px; border-radius: 6px; font-size: 14px; }
+.modal-conteudo .btn-confirmar-nao { background: transparent; color: #ffffff; border: 1px solid #a3c1ad; }
+.modal-conteudo .btn-confirmar-nao:hover { background: rgba(255, 255, 255, 0.12); }
+.modal-conteudo .btn-confirmar-sim { background: #ffffff; color: #1b3323; }
+.modal-conteudo .btn-confirmar-sim.perigo { background: #e74c3c; color: #ffffff; }
+.modal-conteudo .confirmar-acoes button:focus-visible { outline: 3px solid #2ecc71; outline-offset: 2px; }
+
+@keyframes fundoConfirmar { from { opacity: 0; } to { opacity: 1; } }
+@keyframes subirConfirmar { from { opacity: 0; transform: translateY(14px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+html[data-tema="claro"] #modal-confirmar .modal-conteudo { background: #ffffff; color: #12261b; box-shadow: 0 4px 16px rgba(18, 38, 27, 0.25); }
+html[data-tema="claro"] #modal-confirmar .confirmar-mensagem { color: #4f6b5a; }
+html[data-tema="claro"] #modal-confirmar .btn-confirmar-nao { color: #12261b; border-color: #c8dccf; }
+html[data-tema="claro"] #modal-confirmar .btn-confirmar-nao:hover { background: rgba(27, 56, 43, 0.08); }
+html[data-tema="claro"] #modal-confirmar .btn-confirmar-sim { background: #1b382b; color: #ffffff; }
+html[data-tema="claro"] #modal-confirmar .btn-confirmar-sim.perigo { background: #e74c3c; }
+
+@media (max-width: 600px) {
+    .modal-conteudo.modal-confirmar-conteudo { margin: 22vh auto 0; }
+    html body #area-toasts { gap: 6px; }
+}
+
+/* Quem prefere menos movimento: só esmaece, sem deslizar */
+@media (prefers-reduced-motion: reduce) {
+    .toast-planify, .toast-planify.visivel, .toast-planify.saindo { transform: none; transition: opacity 0.2s ease; }
+    #modal-confirmar, .modal-conteudo.modal-confirmar-conteudo { animation: none; }
 }
