@@ -232,8 +232,7 @@
                     <ul class="lista-contato">
                         <li><span class="icone-contato">✉️</span><a href="mailto:projetoplanify@gmail.com" class="campo-pendente">projetoplanify@gmail.com</a></li>
                         <li><span class="icone-contato">📞</span><a href="tel:5500000000000" class="campo-pendente">[(00) 00000-0000]</a></li>
-                        <li><span class="icone-contato">📸</span><a href="https://www.instagram.com/projetoplanify_?bqrl=NmY2thZHcwg
-                                                                    cGVy" target="_blank" rel="noopener" class="campo-pendente">[@planifyproject_]</a></li>
+                        <li><span class="icone-contato">📸</span><a href="https://instagram.com/planify" target="_blank" rel="noopener" class="campo-pendente">[@planify]</a></li>
                     </ul>
                 </div>
             </div>
@@ -493,6 +492,10 @@
                                     <input type="time" id="lembrete-hora" required>
                                 </div>
                             </div>
+                            <label class="campo-check">
+                                <input type="checkbox" id="lembrete-mensal">
+                                <span>🔁 Repetir todo mês (mesmo dia e horário)</span>
+                            </label>
                             <button type="submit" id="btn-salvar-lembrete">Agendar Lembrete</button>
                         </form>
                     </div>
@@ -717,6 +720,18 @@
                 <label class="rep-label">Repetir por <input type="number" id="rep-semanas" min="1" max="52" value="8"> semanas</label>
                 <button type="submit">Repetir</button>
             </form>
+        </div>
+    </div>
+
+    <!-- JANELA DE CONFIRMAÇÃO -->
+    <div id="modal-confirmar" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmar-titulo">
+        <div class="modal-conteudo modal-confirmar-conteudo">
+            <h2 id="confirmar-titulo">Tem certeza?</h2>
+            <p id="confirmar-mensagem" class="confirmar-mensagem"></p>
+            <div class="confirmar-acoes">
+                <button type="button" id="btn-confirmar-nao" class="btn-confirmar-nao">Cancelar</button>
+                <button type="button" id="btn-confirmar-sim" class="btn-confirmar-sim">Confirmar</button>
+            </div>
         </div>
     </div>
 
