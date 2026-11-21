@@ -355,3 +355,67 @@ html[data-tema="claro"] #modal-repetir .seletor-categoria { background: #ffffff;
     html[data-tema="claro"] #tela-logado :is(#aba-organizacao, #visao-grade-financeira) .tabela-agenda :is(th:first-child, td.coluna-horario),
     html[data-tema="claro"] #tela-logado #visao-grade-financeira .tabela-agenda tfoot td:first-child { box-shadow: inset -1px 0 0 #c8dccf; }
 }
+
+/* =====================================================
+   Avisos na tela (toast) com transição suave
+   ===================================================== */
+.toast-planify {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 200px;
+    overflow: hidden;
+    transition: opacity 0.35s ease, transform 0.35s ease, max-height 0.35s ease, padding 0.35s ease, margin 0.35s ease;
+}
+.toast-planify.visivel { opacity: 1; transform: translateY(0); }
+.toast-planify.saindo {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: -8px;   /* compensa o espaço entre os avisos para a pilha descer suave */
+    border-width: 0;
+}
+
+/* =====================================================
+   Lembrete mensal: caixa de seleção
+   ===================================================== */
+.campo-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #a3c1ad; margin: 4px 0 12px; cursor: pointer; line-height: 1.4; }
+.campo-check input { width: 18px; height: 18px; flex-shrink: 0; accent-color: #2ecc71; cursor: pointer; }
+html[data-tema="claro"] #tela-logado .campo-check { color: #4f6b5a; }
+
+/* =====================================================
+   Janela de confirmação ("Quer mesmo fazer isso?")
+   ===================================================== */
+#modal-confirmar { z-index: 60; animation: fundoConfirmar 0.2s ease; }
+.modal-conteudo.modal-confirmar-conteudo { width: 360px; max-width: 92vw; margin: 18vh auto 0; text-align: center; animation: subirConfirmar 0.25s ease; }
+.modal-confirmar-conteudo h2 { margin-bottom: 10px; }
+.confirmar-mensagem { font-size: 14px; line-height: 1.6; color: #cfe3d7; margin-bottom: 20px; }
+.confirmar-acoes { display: flex; gap: 10px; }
+.modal-conteudo .confirmar-acoes button { flex: 1; padding: 11px 8px; border-radius: 6px; font-size: 14px; }
+.modal-conteudo .btn-confirmar-nao { background: transparent; color: #ffffff; border: 1px solid #a3c1ad; }
+.modal-conteudo .btn-confirmar-nao:hover { background: rgba(255, 255, 255, 0.12); }
+.modal-conteudo .btn-confirmar-sim { background: #ffffff; color: #1b3323; }
+.modal-conteudo .btn-confirmar-sim.perigo { background: #e74c3c; color: #ffffff; }
+.modal-conteudo .confirmar-acoes button:focus-visible { outline: 3px solid #2ecc71; outline-offset: 2px; }
+
+@keyframes fundoConfirmar { from { opacity: 0; } to { opacity: 1; } }
+@keyframes subirConfirmar { from { opacity: 0; transform: translateY(14px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+html[data-tema="claro"] #modal-confirmar .modal-conteudo { background: #ffffff; color: #12261b; box-shadow: 0 4px 16px rgba(18, 38, 27, 0.25); }
+html[data-tema="claro"] #modal-confirmar .confirmar-mensagem { color: #4f6b5a; }
+html[data-tema="claro"] #modal-confirmar .btn-confirmar-nao { color: #12261b; border-color: #c8dccf; }
+html[data-tema="claro"] #modal-confirmar .btn-confirmar-nao:hover { background: rgba(27, 56, 43, 0.08); }
+html[data-tema="claro"] #modal-confirmar .btn-confirmar-sim { background: #1b382b; color: #ffffff; }
+html[data-tema="claro"] #modal-confirmar .btn-confirmar-sim.perigo { background: #e74c3c; }
+
+@media (max-width: 600px) {
+    .modal-conteudo.modal-confirmar-conteudo { margin: 22vh auto 0; }
+    html body #area-toasts { gap: 6px; }
+}
+
+/* Quem prefere menos movimento: só esmaece, sem deslizar */
+@media (prefers-reduced-motion: reduce) {
+    .toast-planify, .toast-planify.visivel, .toast-planify.saindo { transform: none; transition: opacity 0.2s ease; }
+    #modal-confirmar, .modal-conteudo.modal-confirmar-conteudo { animation: none; }
+}
