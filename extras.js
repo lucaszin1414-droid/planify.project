@@ -3,7 +3,7 @@
 // Categorias + gráfico, orçamento semanal, metas, dica do dia,
 // copiar semana, atividades repetidas, exportar Excel, tema claro/escuro,
 // instalar como app (PWA), hora atual na grade e avisos no painel admin.
-// Depende do script.js (carregue DEPOIS dele).
+// Depende do script.js (carregue DEPOIS dele) e do atividades.js (carregue DEPOIS deste).
 // =====================================================
 (function () {
     'use strict';
@@ -83,14 +83,13 @@
         return 'Outros';
     }
 
-    // ---------- Dados da semana ----------
+    // ---------- Dados da semana (vêm do atividades.js: várias atividades por hora) ----------
     function itensDaSemana() {
         const chave = chaveDia(semanaSelecionada);
-        const dados = financeiroPorSemana[chave] || {};
-        const agenda = agendaPorSemana[chave] || {};
-        return Object.entries(dados)
-            .filter(([, i]) => i && Number(i.valor) > 0)
-            .map(([campo, i]) => ({ ...i, categoriaAuto: categoriaDe(agenda[campo], i) }));
+        const lista = window.PlanifyAtividades ? window.PlanifyAtividades.itensDaSemana(chave) : [];
+        return lista
+            .filter(i => Number(i.valor) > 0)
+            .map(i => ({ ...i, categoriaAuto: categoriaDe(i.texto, i) }));
     }
 
     function gastosDaSemana() {
@@ -381,23 +380,19 @@
 
     // ---------- Copiar semana anterior ----------
     function copiarSemanaAnterior() {
+        const A = window.PlanifyAtividades;
+        if (!A) return;
         const atual = chaveDia(semanaSelecionada);
         const anterior = chaveDia(adicionarDias(semanaSelecionada, -7));
-        const origem = agendaPorSemana[anterior];
+        const novos = A.textosParaCopiar(anterior, atual);
 
-        if (!origem || !Object.keys(origem).length) return alert('A semana anterior não tem atividades para copiar.');
+        if (!novos.length) return alert('Não há atividades novas para copiar da semana anterior (ou todas já estão nesta semana).');
+        if (!confirm(`Copiar ${novos.length} atividade${novos.length === 1 ? '' : 's'} da semana anterior para esta semana?\n\nAtividades que já existem no mesmo horário não são repetidas, e os valores do financeiro não são copiados.`)) return;
 
-        const destino = agendaPorSemana[atual] || {};
-        const novos = Object.entries(origem).filter(([campo]) => !destino[campo]);
-        if (!novos.length) return alert('Todos os horários que têm atividade na semana anterior já estão preenchidos nesta semana.');
-
-        if (!confirm(`Copiar ${novos.length} atividade${novos.length === 1 ? '' : 's'} da semana anterior para esta semana?\n\nHorários que já têm texto não são alterados, e os valores do financeiro não são copiados.`)) return;
-
-        novos.forEach(([campo, texto]) => { destino[campo] = texto; });
-        agendaPorSemana[atual] = destino;
+        const colocadas = A.copiarTextos(atual, novos);
         sincronizarDadosComNuvem();
         renderizarSemana();
-        mostrarToast(`✅ ${novos.length} atividade${novos.length === 1 ? '' : 's'} copiada${novos.length === 1 ? '' : 's'}.`);
+        mostrarToast(`✅ ${colocadas} atividade${colocadas === 1 ? '' : 's'} copiada${colocadas === 1 ? '' : 's'}.`);
     }
 
     // ---------- Atividade que se repete ----------
@@ -439,19 +434,16 @@
             for (let k = 0; k < semanas; k++) {
                 const chave = chaveDia(adicionarDias(semanaSelecionada, 7 * k));
                 dias.forEach(dia => {
-                    const campo = `${hIndex}-${dia}`;
-                    const semana = agendaPorSemana[chave] || (agendaPorSemana[chave] = {});
-                    if (semana[campo]) puladas++;
-                    else { semana[campo] = texto; colocadas++; }
+                    const r = window.PlanifyAtividades.inserirTexto(chave, `${hIndex}-${dia}`, texto);
+                    if (r === 'ok') colocadas++; else puladas++;
                 });
-                if (agendaPorSemana[chave] && !Object.keys(agendaPorSemana[chave]).length) delete agendaPorSemana[chave];
             }
 
             sincronizarDadosComNuvem();
             renderizarSemana();
             modal.style.display = 'none';
             $('form-repetir').reset();
-            alert(`Pronto! ${colocadas} horário${colocadas === 1 ? '' : 's'} preenchido${colocadas === 1 ? '' : 's'}` + (puladas ? ` (${puladas} já tinham texto e foram mantidos).` : '.'));
+            alert(`Pronto! ${colocadas} horário${colocadas === 1 ? '' : 's'} preenchido${colocadas === 1 ? '' : 's'}` + (puladas ? ` (${puladas} já tinham essa atividade ou estavam cheios e foram mantidos).` : '.'));
         });
     }
 
@@ -492,8 +484,7 @@
         if (!window.XLSX) return alert('Não foi possível carregar o gerador de Excel. Confira sua internet e recarregue a página.');
 
         const chave = chaveDia(semanaSelecionada);
-        const agenda = agendaPorSemana[chave] || {};
-        const fin = financeiroPorSemana[chave] || {};
+        const itens = window.PlanifyAtividades ? window.PlanifyAtividades.itensDaSemana(chave) : [];
 
         const movimentos = [['Nº', 'Data', 'Dia', 'Horário', 'Atividade', 'Tipo', 'Categoria', 'Valor (R$)']];
         const porDia = [['Dia', 'Data', 'Entradas (R$)', 'Saídas (R$)', 'Saldo (R$)']];
@@ -504,29 +495,23 @@
             const data = adicionarDias(semanaSelecionada, dia);
             let e = 0, s = 0;
 
-            for (let h = 0; h < TOTAL_HORAS; h++) {
-                const campo = `${h}-${dia}`;
-                const atividade = (agenda[campo] || '').trim();
-                const item = fin[campo];
-                const valor = item && Number(item.valor) > 0 ? Number(item.valor) : 0;
-                if (!atividade && !valor) continue;
-
+            itens.filter(i => i.d === dia).forEach(it => {
                 n++;
-                const saida = valor > 0 && item.tipo === 'saida';
-                const categoria = valor > 0 ? categoriaDe(atividade, item) : '';
+                const valor = it.valor > 0 ? it.valor : 0;
+                const saida = valor > 0 && it.tipo === 'saida';
+                const categoria = valor > 0 ? categoriaDe(it.texto, it) : '';
                 if (valor > 0) {
                     if (saida) { s += valor; porCat[categoria] = (porCat[categoria] || 0) + valor; }
                     else e += valor;
                 }
-
                 movimentos.push([
-                    n, formatarDataCompleta(data), diasDaSemana[dia], formatarHora(h),
-                    atividade || 'Lançamento financeiro',
+                    n, formatarDataCompleta(data), diasDaSemana[dia], formatarHora(it.h),
+                    it.texto || 'Lançamento financeiro',
                     valor > 0 ? (saida ? 'Saída' : 'Entrada') : '',
                     categoria,
                     valor > 0 ? arredondar(valor) : ''
                 ]);
-            }
+            });
 
             e = arredondar(e); s = arredondar(s);
             totalE += e; totalS += s;
