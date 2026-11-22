@@ -39,6 +39,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="extras.css">
+    <link rel="stylesheet" href="atividades.css">
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#1b382b">
     <meta name="mobile-web-app-capable" content="yes">
@@ -734,7 +735,7 @@
         <div class="modal-conteudo modal-config-conteudo">
             <span class="fechar" id="fechar-repetir">&times;</span>
             <h2>Atividade repetida</h2>
-            <p class="cfg-ajuda">Preenche o horário escolhido nas próximas semanas, a partir da semana que você está vendo. Horários que já têm texto não são alterados.</p>
+            <p class="cfg-ajuda">Preenche o horário escolhido nas próximas semanas, a partir da semana que você está vendo. Se o horário já tiver outra atividade, a nova é adicionada junto (até 5 por horário). Atividades iguais não são repetidas.</p>
             <form id="form-repetir">
                 <input type="text" id="rep-texto" placeholder="Atividade (ex: Aula de inglês)" maxlength="60" required>
                 <div class="rep-dias" id="rep-dias">
@@ -818,6 +819,7 @@
     <script src="nota-pdf.js"></script>
     <script src="script.js"></script>
     <script src="extras.js"></script>
+    <script src="atividades.js"></script>
     <script src="landing.js"></script>
 </body>
 </html>
