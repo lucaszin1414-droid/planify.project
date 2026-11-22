@@ -1,10 +1,10 @@
 // PlaniFy - service worker
 // Estratégia: rede primeiro, cache como reserva. Assim, quando você publica uma
 // versão nova no GitHub, o app instalado pega a nova versão sem ficar "preso" no cache.
-const VERSAO = 'planify-v2';
+const VERSAO = 'planify-v3';
 const ARQUIVOS = [
-    './', 'index.html', 'style.css', 'extras.css',
-    'script.js', 'extras.js', 'nota-pdf.js', 'landing.js',
+    './', 'index.html', 'style.css', 'extras.css', 'atividades.css',
+    'script.js', 'extras.js', 'atividades.js', 'nota-pdf.js', 'landing.js',
     'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'capivara.jpeg'
 ];
 
